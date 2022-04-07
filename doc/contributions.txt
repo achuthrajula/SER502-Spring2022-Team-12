@@ -1,0 +1,19 @@
+﻿Project Contributions:
+
+
+Milestone 1:
+
+
+Achuth Reddy Rajula: Added Documentation and Designed the Grammar
+
+
+Varshik Sonti: Added Documentation and Designed the Grammar
+
+
+Rajiv Kashyap Jalakam : Worked on the design of the language. Worked on the documentation
+
+
+Rajalaxman Rao Thakkalapelli : Worked on the documentation and analyzed the grammar
+
+
+Rahul Vuppula: Worked on documentation and analyzed the grammar
