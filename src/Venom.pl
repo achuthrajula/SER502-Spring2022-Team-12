@@ -13,30 +13,65 @@ block(t_Block(M)) --> ['{'], blockSection(M), ['}'].
 blockSection(t_Block(M)) --> statements(M).
 blockSection(t_Block(M, N)) --> statements(M), blockSection(N).
 
+% Parsing statements 
+statements(t_statements(X)) --> 
+    declaration(X), [;].
+statements(t_statements(X)) --> 
+    assignment(X), [;].
+statements(t_statements(X)) --> 
+    expression(X), [;].
+statements(t_statements(X)) --> 
+    boolean(X), [;].
+statements(t_statements(X)) --> 
+    printstatements(X), [;].
+statements(t_statements(X)) --> 
+    ifcondition(X).
+statements(t_statements(X)) --> 
+    ternarycondition(X), [;].
+statements(t_statements(X)) --> 
+    forloop(X).
+statements(t_statements(X)) --> 
+    whileloop(X).
+statements(t_statements(X)) --> 
+    forrange(X).
+statements(t_statements(X)) --> 
+    iterator(X), [;].
+
 % Parsing for loop
-forLoop(t_ForLoop(M, N, O, P)) --> ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(t_ForLoop(M, N, O, P)) --> ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [']'], block(P).
-forLoop(t_ForLoop(M, N, O, P)) --> ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(t_ForLoop(M, N, O, P)) --> ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
+forLoop(t_ForLoop(M, N, O, P)) --> 
+    ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
+forLoop(t_ForLoop(M, N, O, P)) --> 
+    ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [']'], block(P).
+forLoop(t_ForLoop(M, N, O, P)) --> 
+    ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
+forLoop(t_ForLoop(M, N, O, P)) --> 
+    ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
 
 % Parsing forRange loop
-forRange(t_ForRange(M, N, O, P)) --> ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], num(O), [']'], block(P).
-forRange(t_ForRange(M, N, O, P)) --> ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], identifier(O), [']'], block(P).
-forRange(t_ForRange(M, N, O, P)) --> ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], identifier(O), [']'], block(P).
-forRange(t_ForRange(M, N, O, P)) --> ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], num(O), [']'], block(P).
+forRange(t_ForRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], num(O), [']'], block(P).
+forRange(t_ForRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], identifier(O), [']'], block(P).
+forRange(t_ForRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], identifier(O), [']'], block(P).
+forRange(t_ForRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], num(O), [']'], block(P).
 
 % Parsing M while loop
-whileloop(t_WhileLoop(M, N)) --> ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
+whileloop(t_WhileLoop(M, N)) --> 
+    ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
 
 %Evaluations begin here
 
 %to evaluate the program
-evalProgram(t_Program(X), FinalEnv) :- evalBlock(X, [], FinalEnv), !.
+evalProgram(t_Program(X), FinalEnv) :- 
+    evalBlock(X, [], FinalEnv), !.
 
 %to evaluate the block
-evalBlock(t_Block(X), Env, FinalEnv) :- eval_block_section(X, Env, FinalEnv).
-eval_block_section(t_Block(X, Y), Env, FinalEnv) :- eval_statements(X, Env, Env1), 
-    eval_block_section(Y, Env1, FinalEnv).
+evalBlock(t_Block(X), Env, FinalEnv) :- 
+    eval_block_section(X, Env, FinalEnv).
+eval_block_section(t_Block(X, Y), Env, FinalEnv) :- 
+    eval_statements(X, Env, Env1),  eval_block_section(Y, Env1, FinalEnv).
 eval_block_section(t_Block(X), Env, FinalEnv) :- eval_statements(X, Env, FinalEnv).
 
 %to evaluate the while loop
