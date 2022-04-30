@@ -6,60 +6,81 @@ venom(Lexername, Filename) :-
 :- table boolean/3, expression/3, term/3.
 
 % Parsing the program 
-program(t_Program(M)) -->['begin'], block(M), ['end'].
+program(Program(M)) -->['begin'], block(M), ['end'].
 
 % Parsing the block
-block(t_Block(M)) --> ['{'], blockSection(M), ['}']. 
-blockSection(t_Block(M)) --> statements(M).
-blockSection(t_Block(M, N)) --> statements(M), blockSection(N).
+block(Block(M)) --> ['{'], blockSection(M), ['}']. 
+blockSection(Block(M)) --> statements(M).
+blockSection(Block(M, N)) --> statements(M), blockSection(N).
 
 % Parsing statements 
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     declaration(X), [;].
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     assignment(X), [;].
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     expression(X), [;].
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     boolean(X), [;].
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     printstatements(X), [;].
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     ifcondition(X).
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     ternarycondition(X), [;].
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     forloop(X).
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     whileloop(X).
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     forrange(X).
-statements(t_statements(X)) --> 
+statements(Statements(X)) --> 
     iterator(X), [;].
 
 % Parsing for loop
-forLoop(t_ForLoop(M, N, O, P)) --> 
+forLoop(ForLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(t_ForLoop(M, N, O, P)) --> 
+forLoop(ForLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [']'], block(P).
-forLoop(t_ForLoop(M, N, O, P)) --> 
+forLoop(ForLoop(M, N, O, P)) --> 
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(t_ForLoop(M, N, O, P)) --> 
+forLoop(ForLoop(M, N, O, P)) --> 
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
 
 % Parsing forRange loop
-forRange(t_ForRange(M, N, O, P)) --> 
+forRange(ForRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], num(O), [']'], block(P).
-forRange(t_ForRange(M, N, O, P)) --> 
+forRange(ForRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], identifier(O), [']'], block(P).
-forRange(t_ForRange(M, N, O, P)) --> 
+forRange(ForRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], identifier(O), [']'], block(P).
-forRange(t_ForRange(M, N, O, P)) --> 
+forRange(ForRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], num(O), [']'], block(P).
 
 % Parsing M while loop
-whileloop(t_WhileLoop(M, N)) --> 
+whileloop(WhileLoop(M, N)) --> 
     ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
+
+% Parsing boolean expressions
+boolean(true) --> ['true'].
+boolean(false) --> ['false'].
+boolean(Bool_Not(X)) --> ['not'],['('], boolean(X), [')'].
+boolean(Bool_Not(X)) --> ['not'],['('], condition(X), [')'].
+boolean(Bool_And(X, Y)) --> boolean(X), ['and'], boolean(Y).
+boolean(Bool_And(X, Y)) --> condition(X), ['and'], condition(Y).
+boolean(Bool_Or(X, Y)) --> boolean(X), ['or'], boolean(Y).
+boolean(Bool_Or(X, Y)) --> condition(X), ['or'], condition(Y).
+
+not(true, false).
+not(false, true).
+
+and(false, _, false).
+and(_, false, false).
+and(true, true, true).
+
+or(true, _, true).
+or(_, true, true).
+or(false, false, false).
 
 %Evaluations begin here
 
