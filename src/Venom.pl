@@ -97,4 +97,14 @@ looping(X,Z,W, Env,FinalEnv):-
 looping(X,Z,_W, Env, Env) :- 
     lookup(X, Env, Val), 
     Val >= Z.
-   
+ %to evaluating print statements
+evaluate_flash(f_print(X), Env, Env) :- 
+    evaluate_character_tree(X,Id),
+    lup(Id, Env, Value),
+    writeln(Value).
+evaluate_flash(f_print(X), Env, Env) :- 
+    eval_numtree(X, Value),
+    writeln(Value).
+evaluate_flash(f_print(X), Env, Env) :- 
+    eval_str(X, Env, Env, Value),
+    writeln(Value).  
