@@ -6,70 +6,76 @@ venom(Lexername, Filename) :-
 :- table boolean/3, expression/3, term/3.
 
 % Parsing the program 
-program(Program(M)) -->['begin'], block(M), ['end'].
+program(program(M)) -->['begin'], block(M), ['end'].
 
 % Parsing the block
-block(Block(M)) --> ['{'], blockSection(M), ['}']. 
-blockSection(Block(M)) --> statements(M).
-blockSection(Block(M, N)) --> statements(M), blockSection(N).
+block(block(M)) --> ['{'], blockSection(M), ['}']. 
+blockSection(block(M)) --> statements(M).
+blockSection(block(M, N)) --> statements(M), blockSection(N).
 
 % Parsing statements 
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     declaration(X), [;].
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     assignment(X), [;].
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     expression(X), [;].
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     boolean(X), [;].
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     printstatements(X), [;].
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     ifcondition(X).
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     ternarycondition(X), [;].
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     forloop(X).
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     whileloop(X).
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     forrange(X).
-statements(Statements(X)) --> 
+statements(statements(X)) --> 
     iterator(X), [;].
 
+declaration(declare(int, M, N)) --> ['int'], identifier(M), ['='], expression(N).
+declaration(declare(string, M, N)) --> ['string'], identifier(M), ['='], string(N).
+declaration(declare(boolean, M, true)) --> ['bool'], identifier(M), [=], ['true'].
+declaration(declare(boolean, M, false)) --> ['bool'], identifier(M), [=], ['false'].
+declaration(declare(M, N)) --> dataType(M), identifier(N).
+
 % Parsing for loop
-forLoop(ForLoop(M, N, O, P)) --> 
+forLoop(forLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(ForLoop(M, N, O, P)) --> 
+forLoop(forLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [']'], block(P).
-forLoop(ForLoop(M, N, O, P)) --> 
+forLoop(forLoop(M, N, O, P)) --> 
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(ForLoop(M, N, O, P)) --> 
+forLoop(forLoop(M, N, O, P)) --> 
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
 
 % Parsing forRange loop
-forRange(ForRange(M, N, O, P)) --> 
+forRange(forRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], num(O), [']'], block(P).
-forRange(ForRange(M, N, O, P)) --> 
+forRange(forRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], identifier(O), [']'], block(P).
-forRange(ForRange(M, N, O, P)) --> 
+forRange(forRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], identifier(O), [']'], block(P).
-forRange(ForRange(M, N, O, P)) --> 
+forRange(forRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], num(O), [']'], block(P).
 
 % Parsing M while loop
-whileloop(WhileLoop(M, N)) --> 
+whileloop(whileLoop(M, N)) --> 
     ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
 
 % Parsing boolean expressions
 boolean(true) --> ['true'].
 boolean(false) --> ['false'].
-boolean(Bool_Not(X)) --> ['not'],['('], boolean(X), [')'].
-boolean(Bool_Not(X)) --> ['not'],['('], condition(X), [')'].
-boolean(Bool_And(X, Y)) --> boolean(X), ['and'], boolean(Y).
-boolean(Bool_And(X, Y)) --> condition(X), ['and'], condition(Y).
-boolean(Bool_Or(X, Y)) --> boolean(X), ['or'], boolean(Y).
-boolean(Bool_Or(X, Y)) --> condition(X), ['or'], condition(Y).
+boolean(bool_Not(X)) --> ['not'],['('], boolean(X), [')'].
+boolean(bool_Not(X)) --> ['not'],['('], condition(X), [')'].
+boolean(bool_And(X, Y)) --> boolean(X), ['and'], boolean(Y).
+boolean(bool_And(X, Y)) --> condition(X), ['and'], condition(Y).
+boolean(bool_Or(X, Y)) --> boolean(X), ['or'], boolean(Y).
+boolean(bool_Or(X, Y)) --> condition(X), ['or'], condition(Y).
 
 not(true, false).
 not(false, true).
