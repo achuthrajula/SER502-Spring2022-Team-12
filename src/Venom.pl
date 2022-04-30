@@ -149,3 +149,27 @@ looping(X,Z,W, Env,FinalEnv):-
 looping(X,Z,_W, Env, Env) :- 
     lookup(X, Env, Val), 
     Val >= Z.
+
+% Evaluates boolean expressions
+eval_boolean(true, _Env, _NEnv, true).
+eval_boolean(false, _Env, _NEnv,false).
+eval_boolean(t_bool_not(B), Env, NEnv, Val) :- 
+    (eval_boolean(B, Env, NEnv, Val1);eval_condition(B, Env, NEnv, Val1)), 
+    not(Val1, Val2), 
+    Val = Val2.
+eval_boolean(t_bool_and(X, Y), Env, NEnv, Val) :- 
+    eval_boolean(X, Env, NEnv, Val1),
+    eval_boolean(Y, Env, NEnv, Val2),
+    and(Val1, Val2, Val).
+eval_boolean(t_bool_and(X, Y), Env, NEnv, Val) :- 
+    eval_condition(X, Env, NEnv, Val1),
+    eval_condition(Y, Env, NEnv, Val2), 
+    and(Val1, Val2, Val).
+eval_boolean(t_bool_or(X, Y), Env, NEnv, Val) :- 
+    eval_boolean(X, Env, NEnv, Val1),
+    eval_boolean(Y, Env, NEnv, Val2),
+    or(Val1, Val2, Val).
+eval_boolean(t_bool_or(X, Y), Env, NEnv, Val) :- 
+    eval_condition(X, Env, NEnv, Val1),
+    eval_condition(Y, Env, NEnv, Val2),
+    or(Val1, Val2, Val).
