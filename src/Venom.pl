@@ -27,6 +27,10 @@ forRange(t_ForRange(M, N, O, P)) --> ['for'], identifier(M), ['in'], ['range'], 
 
 % Parsing M while loop
 whileloop(t_WhileLoop(M, N)) --> ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
+% Parsing for Print statement
+flash(f_print(X)) --> ['print'], identifier(X).
+flash(f_print(X)) --> ['print'], num(X).
+flash(f_print(X)) --> ['print'], string(X).
 
 %Evaluations begin here
 
@@ -93,3 +97,4 @@ looping(X,Z,W, Env,FinalEnv):-
 looping(X,Z,_W, Env, Env) :- 
     lookup(X, Env, Val), 
     Val >= Z.
+   
