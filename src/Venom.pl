@@ -29,14 +29,15 @@ statements(statements(X)) -->
 statements(statements(X)) --> 
     ternarycondition(X), [;].
 statements(statements(X)) --> 
-    forloop(X).
+    for(X).
 statements(statements(X)) --> 
-    whileloop(X).
+    while(X).
 statements(statements(X)) --> 
-    forrange(X).
+    for_in_range(X).
 statements(statements(X)) --> 
     iterator(X), [;].
 
+%to parse variable declaration
 declaration(declare(int, M, N)) --> ['int'], identifier(M), ['='], expression(N).
 declaration(declare(string, M, N)) --> ['string'], identifier(M), ['='], string(N).
 declaration(declare(boolean, M, true)) --> ['bool'], identifier(M), [=], ['true'].
@@ -59,20 +60,19 @@ for(forLoop(M, N, O, P)) -->
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
 
 % Parsing forRange loop
-forRange(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], num(O), [']'], block(P).
-forRange(forRange(M, N, O, P)) --> 
+for_in_range(forRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], value(N), ['--'], value(O), [']'], block(P).
+for_in_range(forRange(M, N, O, P)) --> 
     ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], identifier(O), [']'], block(P).
-forRange(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], num(N), ['--'], identifier(O), [']'], block(P).
-forRange(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], num(O), [']'], block(P).
+for_in_range(forRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], value(N), ['--'], identifier(O), [']'], block(P).
+for_in_range(forRange(M, N, O, P)) --> 
+    ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], value(O), [']'], block(P).
 
 % Parsing M while loop
-whileloop(whileLoop(M, N)) --> 
-    ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
+while(whileLoop(M, N)) --> 
+    ['while'], ['('], (condition(M); boolean(M)), [')'], block(N).
 
-% Parsing the expressions
 expression(add(M, N)) --> expression(M), ['+'], expression_helper(M).
 expression(sub(M, N)) --> expression(M), ['-'], expression_helper(M).
 expression(M) --> expression_helper(M).
@@ -95,6 +95,7 @@ identifier(identifier(M)) --> [M], {atom(M)}.
 string(M) --> onlystring(M).
 onlystring(onlystring(M)) --> [M], {atom(M)}.
 
+
 % Parsing boolean expressions
 boolean(true) --> ['true'].
 boolean(false) --> ['false'].
@@ -115,6 +116,21 @@ and(true, true, true).
 or(true, _, true).
 or(_, true, true).
 or(false, false, false).
+
+
+%lookup predicate
+
+lookup(Id, [(_Type, Id, Temp)|_], Temp).
+lookup(Id, [_|Tail], Temp) :- lookup(Id, Tail, Temp).
+
+lookup_type(Id, [_|Tail], Temp) :- lookup_type(Id, Tail, Temp).
+lookup_type(Id, [(Type,Id,_X)|_], Type).
+
+%update predicate updates the value of the identifier
+
+update(Type, Id, Val, [], [(Type, Id, Val)]).
+update(Type, Id, Val, [(Type, Id, _)|Tail], [(Type, Id, Val)|Tail]).
+update(Type, Id, Val, [Head|Tail], [Head|Rest]) :- update(Type, Id, Val, Tail, Rest).
 
 %Evaluations begin here
 
@@ -172,20 +188,20 @@ evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):-
 loops(X,Y,Z, Env,FinalEnv) :- 
     evalCondition(X, Env, Env,true),
     evalBlock(Z, Env, NewEnv),
-    (evalIter(Y, NewEnv, NewEnv1);eval_expr(Y, NewEnv, NewEnv1)),
+    (evalIterator(Y, NewEnv, NewEnv1);evalExpression(Y, NewEnv, NewEnv1)),
     loops(X,Y,Z, NewEnv1,FinalEnv).
 loops(X,_Y,_Z, Env, Env) :- 
     evalCondition(X, Env, Env,false).
 loops(X,Y,Z, Env,FinalEnv) :- 
     evalBoolean(X, Env, Env,true),
     evalBlock(Z, Env, NewEnv),
-    (evalIter(Y, NewEnv, NewEnv1);eval_expr(Y, NewEnv, NewEnv1)),
+    (evalIterator(Y, NewEnv, NewEnv1);evalExpression(Y, NewEnv, NewEnv1)),
     loops(X,Y,Z, NewEnv1,FinalEnv).
 loops(X,_Y,_Z, Env, Env) :- 
     evalBoolean(X, Env, Env,false).
 
 %to evaluate the forRange
-evalForrange(t_ForRange(X,Y,Z,W), Env,FinalEnv):- 
+evalForrange(forRange(X,Y,Z,W), Env,FinalEnv):- 
     evalCharTree(X,Id),
     ((evalNumtree(Y, Val),update(int,Id, Val, Env, NewEnv));
     (lookup(Y, Env, Val),update(int,Id, Val, Env, NewEnv))),
@@ -204,29 +220,30 @@ looping(X,Z,_W, Env, Env) :-
     Val >= Z.
 
 % Evaluates boolean expressions
-eval_boolean(true, _Env, _NEnv, true).
-eval_boolean(false, _Env, _NEnv,false).
-eval_boolean(t_bool_not(B), Env, NEnv, Val) :- 
-    (eval_boolean(B, Env, NEnv, Val1);eval_condition(B, Env, NEnv, Val1)), 
+evalBoolean(true, _Env, _NEnv, true).
+evalBoolean(false, _Env, _NEnv,false).
+evalBoolean(t_bool_not(B), Env, NEnv, Val) :- 
+    (evalBoolean(B, Env, NEnv, Val1);eval_condition(B, Env, NEnv, Val1)), 
     not(Val1, Val2), 
     Val = Val2.
-eval_boolean(t_bool_and(X, Y), Env, NEnv, Val) :- 
-    eval_boolean(X, Env, NEnv, Val1),
-    eval_boolean(Y, Env, NEnv, Val2),
+evalBoolean(t_bool_and(X, Y), Env, NEnv, Val) :- 
+    evalBoolean(X, Env, NEnv, Val1),
+    evalBoolean(Y, Env, NEnv, Val2),
     and(Val1, Val2, Val).
-eval_boolean(t_bool_and(X, Y), Env, NEnv, Val) :- 
+evalBoolean(t_bool_and(X, Y), Env, NEnv, Val) :- 
     eval_condition(X, Env, NEnv, Val1),
     eval_condition(Y, Env, NEnv, Val2), 
     and(Val1, Val2, Val).
-eval_boolean(t_bool_or(X, Y), Env, NEnv, Val) :- 
-    eval_boolean(X, Env, NEnv, Val1),
-    eval_boolean(Y, Env, NEnv, Val2),
+evalBoolean(t_bool_or(X, Y), Env, NEnv, Val) :- 
+    evalBoolean(X, Env, NEnv, Val1),
+    evalBoolean(Y, Env, NEnv, Val2),
     or(Val1, Val2, Val).
-eval_boolean(t_bool_or(X, Y), Env, NEnv, Val) :- 
+evalBoolean(t_bool_or(X, Y), Env, NEnv, Val) :- 
     eval_condition(X, Env, NEnv, Val1),
     eval_condition(Y, Env, NEnv, Val2),
     or(Val1, Val2, Val).
 
+%to evaluate addition,subtraction,multiplication and division
 evalExpression(X, Env, NewEnv) :- 
     eval_assignment(X, Env, NewEnv).
 evalExpression(X, Env, NewEnv, Val) :- 
@@ -280,3 +297,4 @@ evalValueTree(value(Val), Val).
 evalCharTree(identifier(I),Id):- 
     term_to_atom(Id,I).
 evalStr(string(I), Env, Env, Val) :- 
+    atom_string(I, Val).
