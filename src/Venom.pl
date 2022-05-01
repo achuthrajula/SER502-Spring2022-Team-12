@@ -87,6 +87,14 @@ expression_helper(M) --> identifier(M).
 operator_helper(\\) --> ['mod'].
 operator_helper(^) --> ['**'].
 
+iterator(increment(M)) --> identifier(M),['+'],['+'].
+iterator(decrement(M)) --> identifier(M),['-'],['-'].
+
+value(value(M)) --> [M],{number(M)}.
+identifier(identifier(M)) --> [M], {atom(M)}.
+string(M) --> onlystring(M).
+onlystring(onlystring(M)) --> [M], {atom(M)}.
+
 % Parsing boolean expressions
 boolean(true) --> ['true'].
 boolean(false) --> ['false'].
@@ -249,3 +257,26 @@ evalHelper3(X,  Env, NewEnv, Val) :-
     evalValue(X, Env, NewEnv, Val).
 evalHelper3(t_parentheses(X), Env, NewEnv, Val):-
     evalExpression(X, Env, NewEnv, Val).
+
+%to evaluate the increment,decrement operation
+evalIterator(increment(M), Env, NewEnv) :- 
+    evalCharTree(M,Id),
+    lookup_type(Id, Env,int),
+    lookup(Id, Env, Val),
+    Val1 is Val + 1, 
+    update(int,Id, Val1, Env, NewEnv).
+evalIterator(decrement(M), Env, NewEnv) :- 
+    evalCharTree(M,Id),
+    lookup_type(Id, Env,int),
+    lookup(Id, Env, Val),
+    Val1 is Val - 1, 
+    update(int,Id, Val1, Env, NewEnv).
+
+evalValue(value(Val), Env, Env, Val).
+evalValue(identifier(I), Env, Env, Val) :-
+    term_to_atom(Id,I),
+    lookup(Id, Env, Val).
+evalValueTree(value(Val), Val).
+evalCharTree(identifier(I),Id):- 
+    term_to_atom(Id,I).
+evalStr(string(I), Env, Env, Val) :- 
