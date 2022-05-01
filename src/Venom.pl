@@ -72,6 +72,21 @@ forRange(forRange(M, N, O, P)) -->
 whileloop(whileLoop(M, N)) --> 
     ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
 
+% Parsing the expressions
+expression(add(M, N)) --> expression(M), ['+'], expression_helper(M).
+expression(sub(M, N)) --> expression(M), ['-'], expression_helper(M).
+expression(M) --> expression_helper(M).
+expression_helper(mul(M, N)) --> expression_helper(M), ['*'], expression_helper(N).
+expression_helper(div(M, N)) --> expression_helper(M), ['/'], expression_helper(N).
+expression_helper(mod(M, E, N)) --> expression_helper(M),operator_helper(E),expression_helper(N).
+expression_helper(square(M, E, N)) --> expression_helper(M),operator_helper(E),expression_helper(N).
+expression_helper(M)--> ['('],expression(M),[')'].
+expression_helper(M) --> value(M).
+expression_helper(M) --> identifier(M).
+
+operator_helper(\\) --> ['mod'].
+operator_helper(^) --> ['**'].
+
 % Parsing boolean expressions
 boolean(true) --> ['true'].
 boolean(false) --> ['false'].
