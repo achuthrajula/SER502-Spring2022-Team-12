@@ -218,3 +218,34 @@ eval_boolean(t_bool_or(X, Y), Env, NEnv, Val) :-
     eval_condition(X, Env, NEnv, Val1),
     eval_condition(Y, Env, NEnv, Val2),
     or(Val1, Val2, Val).
+
+evalExpression(X, Env, NewEnv) :- 
+    eval_assignment(X, Env, NewEnv).
+evalExpression(X, Env, NewEnv, Val) :- 
+    evalExpressionHelper(X, Env, NewEnv, Val).
+evalExpression(sub(X,Y), Env, NewEnv, Val):-
+    evalExpression(X, Env, Env1, Val1),
+    evalExpressionHelper(Y, Env1, NewEnv, Val2),
+    Val is Val1 - Val2.
+evalExpressionHelper(X, Env, NewEnv, Val) :- 
+    evalHelper1(X, Env, NewEnv, Val).
+evalExpressionHelper(add(X,Y), Env, NewEnv, Val):-
+    evalExpressionHelper(X, Env, Env1, Val1),
+    evalHelper1(Y, Env1, NewEnv, Val2),
+    Val is Val1 + Val2.
+evalHelper1(X, Env, NewEnv, Val) :- 
+    evalHelper2(X, Env, NewEnv, Val).
+evalHelper1(mult(X,Y), Env, NewEnv, Val):-
+    evalHelper1(X, Env, Env1, Val1),
+    evalHelper2(Y, Env1, NewEnv, Val2),
+    Val is Val1 * Val2.
+evalHelper2(X, Env, NewEnv, Val) :- 
+    evalHelper3(X, Env, NewEnv, Val).
+evalHelper2(div(X,Y),  Env, NewEnv, Val):-
+    evalHelper2(X, Env, Env1, Val1), 
+    evalHelper3(Y, Env1, NewEnv, Val2),
+    Val is floor(Val1 / Val2).
+evalHelper3(X,  Env, NewEnv, Val) :- 
+    evalValue(X, Env, NewEnv, Val).
+evalHelper3(t_parentheses(X), Env, NewEnv, Val):-
+    evalExpression(X, Env, NewEnv, Val).
