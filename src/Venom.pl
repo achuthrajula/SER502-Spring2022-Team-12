@@ -43,14 +43,19 @@ declaration(declare(boolean, M, true)) --> ['bool'], identifier(M), [=], ['true'
 declaration(declare(boolean, M, false)) --> ['bool'], identifier(M), [=], ['false'].
 declaration(declare(M, N)) --> dataType(M), identifier(N).
 
+%to parse datatype
+dataType(int) --> ['int'].
+dataType(string) --> ['string'].
+dataType(bool) --> ['bool'].
+
 % Parsing for loop
-forLoop(forLoop(M, N, O, P)) --> 
+for(forLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(forLoop(M, N, O, P)) --> 
+for(forLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [']'], block(P).
-forLoop(forLoop(M, N, O, P)) --> 
+for(forLoop(M, N, O, P)) --> 
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
-forLoop(forLoop(M, N, O, P)) --> 
+for(forLoop(M, N, O, P)) --> 
     ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
 
 % Parsing forRange loop
@@ -100,6 +105,25 @@ evalBlock(t_Block(X), Env, FinalEnv) :-
 eval_block_section(t_Block(X, Y), Env, FinalEnv) :- 
     eval_statements(X, Env, Env1),  eval_block_section(Y, Env1, FinalEnv).
 eval_block_section(t_Block(X), Env, FinalEnv) :- eval_statements(X, Env, FinalEnv).
+
+%to evaluate different types of declaration
+eval_declare(t_declare(X, Y), Env, NewEnv):- 
+    evalCharTree(Y, Id),
+    update(X, Id, _, Env, NewEnv).
+eval_declare(t_declareint(int, Y, Z), Env, NewEnv):- 
+    evalCharTree(Y, Id),
+    evalExpression(Z, Env, Env1, Val),
+    update(int, Id, Val, Env1, NewEnv).
+eval_declare(t_declarestr(string, Y, Z), Env, NewEnv):- 
+    evalCharTree(Y, Id),
+    evalStr(Z, Env, NewEnv1, Val),
+    update(string, Id, Val, NewEnv1, NewEnv).
+eval_declare(t_declarebool(bool, Y, true), Env, NewEnv):- 
+    evalCharTree(Y, Id),
+    update(bool, Id, true, Env, NewEnv).
+eval_declare(t_declarebool(bool, Y, false), Env, NewEnv):- 
+    evalCharTree(Y, Id),
+    update(bool, Id, false, Env, NewEnv).
 
 %to evaluate the while loop
 evalWhile(t_WhileLoop(X,Y), Env,FinalEnv):- 
