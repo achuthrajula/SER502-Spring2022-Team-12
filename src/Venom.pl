@@ -51,29 +51,32 @@ dataType(bool) --> ['bool'].
 
 % Parsing for loop
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['<'], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), ['>'], block(P).
+    ['for'], ['('], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [')'], block(P).
 for(forLoop(M, N, O, P)) --> 
-
-    ['for'], ['<'], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), ['>'], block(P).
+    ['for'], ['('], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [')'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['<'], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), ['>'], block(P).
+    ['for'], ['('], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [')'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['<'], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), ['>'], block(P).
+    ['for'], ['('], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [')'], block(P).
 
 
 % Parsing forRange loop
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['<'], value(N), ['--'], value(O), ['>'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['('], value(N), ['--'], value(O), [')'], block(P).
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['<'], identifier(N), ['--'], identifier(O), ['>'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['('], identifier(N), ['--'], identifier(O), [')'], block(P).
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['<'], value(N), ['--'], identifier(O), ['>'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['('], value(N), ['--'], identifier(O), [')'], block(P).
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['<'], identifier(N), ['--'], value(O), ['>'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['('], identifier(N), ['--'], value(O), [')'], block(P).
 
-% Parsing M while loop
+% Parsing for Print statement
+flash(f_print(X)) --> ['print'], identifier(X).
+flash(f_print(X)) --> ['print'], num(X).
+flash(f_print(X)) --> ['print'], string(X).
+
 while(whileLoop(M, N)) --> 
-    ['while'], ['<'], (condition(M); boolean(M)), ['>'], block(N).
+    ['while'], ['('], (condition(M); boolean(M)), ['>'], block(N).
 
 expression(add(M, N)) --> expression(M), ['+'], expression_helper(M).
 expression(sub(M, N)) --> expression(M), ['-'], expression_helper(M).
@@ -280,6 +283,17 @@ looping(X,Z,W, Env,FinalEnv):-
 looping(X,Z,_W, Env, Env) :- 
     lookup(X, Env, Val), 
     Val >= Z.
+ %to evaluating print statements
+evaluate_flash(f_print(X), Env, Env) :- 
+    evaluate_character_tree(X,Id),
+    lup(Id, Env, Value),
+    writeln(Value).
+evaluate_flash(f_print(X), Env, Env) :- 
+    eval_numtree(X, Value),
+    writeln(Value).
+evaluate_flash(f_print(X), Env, Env) :- 
+    eval_str(X, Env, Env, Value),
+    writeln(Value).  
 
 % Evaluates boolean expressions
 evalBoolean(true, _Env, _NEnv, true).
