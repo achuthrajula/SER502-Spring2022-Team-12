@@ -142,8 +142,9 @@ or(true, _, true).
 or(_, true, true).
 or(false, false, false).
 
+typeCheck(Val, Temp) :- string(Val), Temp = string | integer(Val), Temp = int | (Val = true ; Val = false), Temp = bool.
 
-%lookup predicate
+% Lookup
 
 lookup(Id, [(_Type, Id, Temp)|_], Temp).
 lookup(Id, [_|Tail], Temp) :- lookup(Id, Tail, Temp).
@@ -151,13 +152,13 @@ lookup(Id, [_|Tail], Temp) :- lookup(Id, Tail, Temp).
 lookupHelper(Id, [_|Tail], Temp) :- lookupHelper(Id, Tail, Temp).
 lookupHelper(Id, [(Type,Id,_M)|_], Type).
 
-%update predicate updates the value of the identifier
+% Update
 
 update(Type, Id, Val, [], [(Type, Id, Val)]).
 update(Type, Id, Val, [(Type, Id, _)|Tail], [(Type, Id, Val)|Tail]).
 update(Type, Id, Val, [Head|Tail], [Head|Rest]) :- update(Type, Id, Val, Tail, Rest).
 
-%Evaluations begin here
+% Evaluator
 
 % Evaluate program statement
 evalProgram(t_Program(M), End) :- 
@@ -205,21 +206,21 @@ evalStatements(t_statements(M), Env, End) :-
 % Evaluating assignments
 evalAssignment(assignment(M, N), Env, NEnv) :- 
     evalExpression(N, Env, Env1, Val),
-    check_type(Val, T),
+    typeCheck(Val, T),
     evalCharTree(M, Id),
     lookupHelper(Id, Env1, T1),
     T =@= T1,
     update(T, Id, Val, Env1, NEnv).
 evalAssignment(assignment(M, N), Env, NEnv) :- 
     evalStr(N, Env, Env, Val),
-    check_type(Val, T),
+    typeCheck(Val, T),
     evalCharTree(M, Id),
     lookupHelper(Id, Env, T1),
     T =@= T1,
     update(T, Id, Val, Env, NEnv).
 evalAssignment(assignment(M, N), Env, NEnv) :- 
    evalBoolean(N, Env, Env, Val),
-    check_type(Val, T),
+    typeCheck(Val, T),
     evalCharTree(M, Id),
    lookupHelper(Id, Env, T1),
     T =@= T1,
@@ -330,42 +331,42 @@ evalCondition(condition(M,'<=',N), Env, NEnv,_Val) :-
 evalCondition(condition(M,==,N), Env, NEnv, Val) :-
     evalCharTree(M,Id),
     lookup(Id, Env, Val1),
-    check_type(Val1,T),
+    typeCheck(Val1,T),
     T=string,
     evalStr(N, Env, NEnv, Val2),
     ((Val1 =@= Val2, Val = true);(\+(Val1 =@= Val2), Val = false)).
 evalCondition(condition(M,'!=',N), Env, NEnv, Val) :- 
     evalCharTree(M,Id),
     lookup(Id, Env, Val1),
-    check_type(Val1,T),
+    typeCheck(Val1,T),
     T=string,
     evalStr(N, Env, NEnv, Val2),
     ((Val1 = Val2, Val = false);(\+(Val1 = Val2), Val = true)).
 evalCondition(condition(M,'>',N), Env, NEnv,_Val) :- 
     evalCharTree(M,Id),
     lookup(Id, Env, Val1),
-    check_type(Val1,T),
+    typeCheck(Val1,T),
     T=string,
     evalStr(N, Env, NEnv,_Val2),
     write("invalid operation").
 evalCondition(condition(M,'<',N), Env, NEnv,_Val) :- 
     evalCharTree(M,Id),
     lookup(Id, Env, Val1),
-    check_type(Val1,T),
+    typeCheck(Val1,T),
     T=string,
     evalStr(N, Env, NEnv,_Val2),
     write("invalid operation").
 evalCondition(condition(M,'>=',N), Env, NEnv,_Val) :- 
     evalCharTree(M,Id),
     lookup(Id, Env, Val1),
-    check_type(Val1,T),
+    typeCheck(Val1,T),
     T=string,
     evalStr(N, Env, NEnv,_Val2),
     write("invalid operation").
 evalCondition(condition(M,'<=',N), Env, NEnv,_Val) :- 
     evalCharTree(M,Id),
     lookup(Id, Env, Val1),
-    check_type(Val1,T),
+    typeCheck(Val1,T),
     T=string,
     evalStr(N, Env, NEnv,_Val2),
     write("invalid operation").
