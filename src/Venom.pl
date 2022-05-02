@@ -17,7 +17,7 @@ blockSection(block(M, N)) --> statements(M), blockSection(N).
 statements(statements(X)) --> 
     declaration(X), [;].
 statements(statements(X)) --> 
-    assignment(X), [;].
+    assignmentoperator(X), [;].
 statements(statements(X)) --> 
     expression(X), [;].
 statements(statements(X)) --> 
@@ -25,9 +25,9 @@ statements(statements(X)) -->
 statements(statements(X)) --> 
     printstatements(X), [;].
 statements(statements(X)) --> 
-    ifcondition(X).
+    ifstatement(X).
 statements(statements(X)) --> 
-    ternarycondition(X), [;].
+    ternary(X), [;].
 statements(statements(X)) --> 
     for(X).
 statements(statements(X)) --> 
@@ -53,11 +53,11 @@ dataType(bool) --> ['bool'].
 for(forLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [']'], block(P).
+    ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignmentoperator(O), [']'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
+    ['for'], ['['], assignmentoperator(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
+    ['for'], ['['], assignmentoperator(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
 
 % Parsing forRange loop
 for_in_range(forRange(M, N, O, P)) --> 
@@ -94,6 +94,20 @@ value(value(M)) --> [M],{number(M)}.
 identifier(identifier(M)) --> [M], {atom(M)}.
 string(M) --> onlystring(M).
 onlystring(onlystring(M)) --> [M], {atom(M)}.
+
+%to parse if condition
+ifstatement(t_if_cond(A, B)) --> ['if'], ['('], (condition(A);boolean(A)), [')'], block(B).
+ifstatement(t_if_cond(A, B, C)) --> ['if'], ['('], (condition(A);boolean(A)), [')'], block(B), ['else'], block(C).
+
+
+%to parse assignment operation
+assignmentoperator(t_assign(X, Y)) --> identifier(X), ['='], expression(Y).
+assignmentoperator(t_assign(X, Y)) --> identifier(X), ['='], boolean(Y).
+
+
+%to parse ternary condition
+ternary(t_tern_cond(A, B, C)) --> (condition(A);boolean(A)), ['?'], statements(B), [':'], statements(C).
+
 
 
 % Parsing boolean expressions
@@ -183,7 +197,7 @@ evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):-
     eval_declare(X, Env, NewEnv),
     loops(Y,Z,W, NewEnv,FinalEnv).
 evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
-    eval_assign(X, Env, NewEnv),
+    eval_assignment(X, Env, NewEnv),
     loops(Y,Z,W, NewEnv,FinalEnv).
 loops(X,Y,Z, Env,FinalEnv) :- 
     evalCondition(X, Env, Env,true),
@@ -199,6 +213,52 @@ loops(X,Y,Z, Env,FinalEnv) :-
     loops(X,Y,Z, NewEnv1,FinalEnv).
 loops(X,_Y,_Z, Env, Env) :- 
     evalBoolean(X, Env, Env,false).
+
+%to evaluate if condition
+if_evaluate(t_if_cond(X,Y), Env,FinalEnv):- 
+    ((eval_condition(X, Env, NewEnv,true);eval_boolean(X, Env, NewEnv,true)),eval_block(Y, NewEnv,FinalEnv)).
+if_evaluate(t_if_cond(X,_Y), Env, NewEnv):- 
+    eval_condition(X, Env, NewEnv,false);eval_boolean(X, Env, NewEnv,false).
+if_evaluate(t_if_cond(X,Y,_Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,true);eval_boolean(X, Env, NewEnv,true)),
+    eval_block(Y, NewEnv,FinalEnv).
+if_evaluate(t_if_cond(X,_Y,Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,false);eval_boolean(X, Env, NewEnv,false)),
+    eval_block(Z, NewEnv,FinalEnv).
+
+
+%to evaluate the assignment operation
+eval_assignment(t_assign(X, Y), Env, NewEnv) :- 
+    eval_expr(Y, Env, Env1, Val),
+    check_type(Val, T),
+    eval_char_tree(X, Id),
+    lookup_type(Id, Env1, T1),
+    T =@= T1,
+    update(T, Id, Val, Env1, NewEnv).
+eval_assignment(t_assign(X, Y), Env, NewEnv) :- 
+    eval_str(Y, Env, Env, Val),
+    check_type(Val, T),
+    eval_char_tree(X, Id),
+    lookup_type(Id, Env, T1),
+    T =@= T1,
+    update(T, Id, Val, Env, NewEnv).
+eval_assignment(t_assign(X, Y), Env, NewEnv) :- 
+   eval_boolean(Y, Env, Env, Val),
+    check_type(Val, T),
+    eval_char_tree(X, Id),
+   lookup_type(Id, Env, T1),
+    T =@= T1,
+    update(T, Id, Val, Env, NewEnv).
+
+%to evaluate ternary condition
+eval_terncondition(t_tern_cond(X,Y,_Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,true);eval_boolean(X, Env, NewEnv,true)),
+    eval_statements(Y, NewEnv,FinalEnv).
+eval_terncondition(t_tern_cond(X,_Y,Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,false);eval_boolean(X, Env, NewEnv,false)),
+    eval_statements(Z, NewEnv,FinalEnv).
+
+
 
 %to evaluate the forRange
 evalForrange(forRange(X,Y,Z,W), Env,FinalEnv):- 
