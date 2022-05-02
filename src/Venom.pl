@@ -27,7 +27,7 @@ statements(statements(X)) -->
 statements(statements(X)) --> 
     ifstatement(X).
 statements(statements(X)) --> 
-    ternarycondition(X), [;].
+    ternary(X), [;].
 statements(statements(X)) --> 
     for(X).
 statements(statements(X)) --> 
@@ -103,6 +103,11 @@ ifstatement(t_if_cond(A, B, C)) --> ['if'], ['('], (condition(A);boolean(A)), ['
 %to parse assignment operation
 assignmentoperator(t_assign(X, Y)) --> identifier(X), ['='], expression(Y).
 assignmentoperator(t_assign(X, Y)) --> identifier(X), ['='], boolean(Y).
+
+
+%to parse ternary condition
+ternary(t_tern_cond(A, B, C)) --> (condition(A);boolean(A)), ['?'], statements(B), [':'], statements(C).
+
 
 
 % Parsing boolean expressions
@@ -245,6 +250,13 @@ eval_assignment(t_assign(X, Y), Env, NewEnv) :-
     T =@= T1,
     update(T, Id, Val, Env, NewEnv).
 
+%to evaluate ternary condition
+eval_terncondition(t_tern_cond(X,Y,_Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,true);eval_boolean(X, Env, NewEnv,true)),
+    eval_statements(Y, NewEnv,FinalEnv).
+eval_terncondition(t_tern_cond(X,_Y,Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,false);eval_boolean(X, Env, NewEnv,false)),
+    eval_statements(Z, NewEnv,FinalEnv).
 
 
 
