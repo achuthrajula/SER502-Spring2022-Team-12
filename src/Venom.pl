@@ -25,7 +25,7 @@ statements(statements(X)) -->
 statements(statements(X)) --> 
     printstatements(X), [;].
 statements(statements(X)) --> 
-    ifcondition(X).
+    ifstatement(X).
 statements(statements(X)) --> 
     ternarycondition(X), [;].
 statements(statements(X)) --> 
@@ -94,6 +94,10 @@ value(value(M)) --> [M],{number(M)}.
 identifier(identifier(M)) --> [M], {atom(M)}.
 string(M) --> onlystring(M).
 onlystring(onlystring(M)) --> [M], {atom(M)}.
+
+%to parse if condition
+ifstatement(t_if_cond(A, B)) --> ['if'], ['('], (condition(A);boolean(A)), [')'], block(B).
+ifstatement(t_if_cond(A, B, C)) --> ['if'], ['('], (condition(A);boolean(A)), [')'], block(B), ['else'], block(C).
 
 
 % Parsing boolean expressions
@@ -199,6 +203,22 @@ loops(X,Y,Z, Env,FinalEnv) :-
     loops(X,Y,Z, NewEnv1,FinalEnv).
 loops(X,_Y,_Z, Env, Env) :- 
     evalBoolean(X, Env, Env,false).
+
+%to evaluate if condition
+if_evaluate(t_if_cond(X,Y), Env,FinalEnv):- 
+    ((eval_condition(X, Env, NewEnv,true);eval_boolean(X, Env, NewEnv,true)),eval_block(Y, NewEnv,FinalEnv)).
+if_evaluate(t_if_cond(X,_Y), Env, NewEnv):- 
+    eval_condition(X, Env, NewEnv,false);eval_boolean(X, Env, NewEnv,false).
+if_evaluate(t_if_cond(X,Y,_Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,true);eval_boolean(X, Env, NewEnv,true)),
+    eval_block(Y, NewEnv,FinalEnv).
+if_evaluate(t_if_cond(X,_Y,Z), Env,FinalEnv):- 
+    (eval_condition(X, Env, NewEnv,false);eval_boolean(X, Env, NewEnv,false)),
+    eval_block(Z, NewEnv,FinalEnv).
+
+
+
+
 
 %to evaluate the forRange
 evalForrange(forRange(X,Y,Z,W), Env,FinalEnv):- 
