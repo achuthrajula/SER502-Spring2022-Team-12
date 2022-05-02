@@ -91,8 +91,16 @@ expression_helper(M)--> ['('],expression(M),[')'].
 expression_helper(M) --> value(M).
 expression_helper(M) --> identifier(M).
 
-operator_helper(\\) --> ['mod'].
-operator_helper(^) --> ['**'].
+operator_helper(\\) --> ['\\'].
+operator_helper(^) --> ['^'].
+
+% Parse operators
+operator(==) --> ['=='].
+operator('~=') --> ['~='].
+operator(>) --> ['>'].
+operator(<) --> ['<'].
+operator(>=) --> ['>='].
+operator(<=) --> ['<='].
 
 iterator(increment(M)) --> identifier(M),['+'],['+'].
 iterator(decrement(M)) --> identifier(M),['-'],['-'].
