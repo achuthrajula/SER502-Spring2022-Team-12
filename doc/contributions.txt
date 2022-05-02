@@ -17,3 +17,22 @@ Rajalaxman Rao Thakkalapelli : Worked on the documentation and analyzed the gram
 
 
 Rahul Vuppula: Worked on documentation and analyzed the grammar
+
+
+Milestone 2:
+Rajiv:
+Worked on the grammer for forloop, while loop and forrange loop
+
+Achuth:
+Worked on the grammer for boolean, condition check and operators. Worked on the lexer and building python module.
+
+Varshik:
+Worked on the grammer for arithmetic expressions, increment decrement operations and data type parsing. Worked on the lexer and building python module.
+
+Laxman:
+Worked on the grammer for not, and, or, type check and print.
+
+Rahul:
+Worked on the grammer for assingment, ifcondition and ternary.
+
+Note: Each person did the parser as well as the evaluator
