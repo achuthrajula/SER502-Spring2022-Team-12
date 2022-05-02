@@ -51,27 +51,29 @@ dataType(bool) --> ['bool'].
 
 % Parsing for loop
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
+    ['for'], ['<'], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), ['>'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignmentoperator(O), [']'], block(P).
+
+    ['for'], ['<'], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), ['>'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], assignmentoperator(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
+    ['for'], ['<'], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), ['>'], block(P).
 for(forLoop(M, N, O, P)) --> 
-    ['for'], ['['], assignmentoperator(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [']'], block(P).
+    ['for'], ['<'], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), ['>'], block(P).
+
 
 % Parsing forRange loop
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], value(N), ['--'], value(O), [']'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['<'], value(N), ['--'], value(O), ['>'], block(P).
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], identifier(O), [']'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['<'], identifier(N), ['--'], identifier(O), ['>'], block(P).
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], value(N), ['--'], identifier(O), [']'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['<'], value(N), ['--'], identifier(O), ['>'], block(P).
 for_in_range(forRange(M, N, O, P)) --> 
-    ['for'], identifier(M), ['in'], ['range'], ['['], identifier(N), ['--'], value(O), [']'], block(P).
+    ['for'], identifier(M), ['in'], ['range'], ['<'], identifier(N), ['--'], value(O), ['>'], block(P).
 
 % Parsing M while loop
 while(whileLoop(M, N)) --> 
-    ['while'], ['('], (condition(M); boolean(M)), [')'], block(N).
+    ['while'], ['<'], (condition(M); boolean(M)), ['>'], block(N).
 
 expression(add(M, N)) --> expression(M), ['+'], expression_helper(M).
 expression(sub(M, N)) --> expression(M), ['-'], expression_helper(M).
