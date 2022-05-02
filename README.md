@@ -32,6 +32,8 @@
 
 Languages used: Python and Prolog
 
+Note: The `/src`, `/data` are placed inside `/venom` and `docs` is placed in the root directory.
+
 ## Contributors:
 
 - Achuth Rajula
