@@ -27,7 +27,7 @@ statements(statements(M)) -->
 statements(statements(M)) --> 
     if_cond(M).
 statements(statements(M)) --> 
-    ternarycondition(M), [;].
+    ternaryExpression(M), [;].
 statements(statements(M)) --> 
     for(M).
 statements(statements(M)) --> 
@@ -113,6 +113,9 @@ boolean(bool_And(M, N)) --> condition(M), ['and'], condition(N).
 boolean(bool_Or(M, N)) --> boolean(M), ['or'], boolean(N).
 boolean(bool_Or(M, N)) --> condition(M), ['or'], condition(N).
 
+% Parsing ternary expressions
+ternaryExpression(ternary(M, N, O)) --> (condition(M);boolean(M)), ['?'], statements(N), [':'], statements(O).
+
 not(true, false).
 not(false, true).
 
@@ -142,15 +145,15 @@ update(Type, Id, Val, [Head|Tail], [Head|Rest]) :- update(Type, Id, Val, Tail, R
 %Evaluations begin here
 
 % Evaluate program statement
-evalProgram(t_Program(M), FinalEnv) :- 
-    evalBlock(M, [], FinalEnv), !.
+evalProgram(t_Program(M), End) :- 
+    evalBlock(M, [], End), !.
 
 % Evaluate block expressions
-evalBlock(block(M), Env, FinalEnv) :- 
-    evalBlockHelper(M, Env, FinalEnv).
-evalBlockHelper(block(M, N), Env, FinalEnv) :- 
-    evalStatements(M, Env, Env1),  evalBlockHelper(N, Env1, FinalEnv).
-evalBlockHelper(block(M), Env, FinalEnv) :- evalStatements(M, Env, FinalEnv).
+evalBlock(block(M), Env, End) :- 
+    evalBlockHelper(M, Env, End).
+evalBlockHelper(block(M, N), Env, End) :- 
+    evalStatements(M, Env, Env1),  evalBlockHelper(N, Env1, End).
+evalBlockHelper(block(M), Env, End) :- evalStatements(M, Env, End).
 
 % Evaluate declaration statements
 evalDeclare(declaration(M, N), Env, NEnv):- 
@@ -172,17 +175,17 @@ evalDeclare(declaration(bool, N, false), Env, NEnv):-
     update(bool, Id, false, Env, NEnv).
 
 % Evaluate statement expressions
-evalStatements(t_statements(M), Env, FinalEnv) :- 
-    evalDeclare(M, Env, FinalEnv);
-    evalAssignment(M, Env, FinalEnv);
-    evalBoolean(M, Env, FinalEnv, _Val);
-    evalPrint(M, Env, FinalEnv);
-    evalCondition(M, Env, FinalEnv);
-    evalWhile(M, Env, FinalEnv);
-    evalFor(M, Env, FinalEnv);
-    evalForInRange(M, Env, FinalEnv);
-    evalTernary(M, Env, FinalEnv);
-    evalIterator(M, Env, FinalEnv).
+evalStatements(t_statements(M), Env, End) :- 
+    evalDeclare(M, Env, End);
+    evalAssignment(M, Env, End);
+    evalBoolean(M, Env, End, _Val);
+    evalPrint(M, Env, End);
+    evalCondition(M, Env, End);
+    evalWhile(M, Env, End);
+    evalFor(M, Env, End);
+    evalForInRange(M, Env, End);
+    evalTernary(M, Env, End);
+    evalIterator(M, Env, End).
 
 % Evaluating assignments
 evalAssignment(assignment(M, N), Env, NEnv) :- 
@@ -208,54 +211,54 @@ evalAssignment(assignment(M, N), Env, NEnv) :-
     update(T, Id, Val, Env, NEnv).
 
 % Evaluate loop expressions
-evalWhile(t_WhileLoop(M,N), Env,FinalEnv):- 
+evalWhile(t_WhileLoop(M,N), Env,End):- 
     evalBoolean(M, Env, NEnv,true),
     evalBlock(N, NEnv, NEnv1),
-    evalWhile(t_WhileLoop(M,N), NEnv1,FinalEnv).
+    evalWhile(t_WhileLoop(M,N), NEnv1,End).
 evalWhile(t_WhileLoop(M,_N), Env, Env) :- 
     evalBoolean(M, Env, Env,false).
-evalWhile(t_WhileLoop(M,N), Env,FinalEnv):- 
+evalWhile(t_WhileLoop(M,N), Env,End):- 
     evalCondition(M, Env, NEnv,true),
     evalBlock(N, NEnv, NEnv1),
-    evalWhile(t_WhileLoop(M,N), NEnv1,FinalEnv).
+    evalWhile(t_WhileLoop(M,N), NEnv1,End).
 evalWhile(t_WhileLoop(M,_N), Env, Env) :- 
     evalCondition(M, Env, Env,false).
 
-evalFor(t_ForLoop(M,N,O,W), Env,FinalEnv):- 
+evalFor(t_ForLoop(M,N,O,W), Env,End):- 
     evalDeclare(M, Env, NEnv),
-    loops(N,O,W, NEnv,FinalEnv).
-evalFor(t_ForLoop(M,N,O,W), Env,FinalEnv):- 
+    loops(N,O,W, NEnv,End).
+evalFor(t_ForLoop(M,N,O,W), Env,End):- 
     evalAssignment(M, Env, NEnv),
-    loops(N,O,W, NEnv,FinalEnv).
-loops(M,N,O, Env,FinalEnv) :- 
+    loops(N,O,W, NEnv,End).
+loops(M,N,O, Env,End) :- 
     evalCondition(M, Env, Env,true),
     evalBlock(O, Env, NEnv),
     (evalIterator(N, NEnv, NEnv1);evalExpression(N, NEnv, NEnv1)),
-    loops(M,N,O, NEnv1,FinalEnv).
+    loops(M,N,O, NEnv1,End).
 loops(M,_N,_O, Env, Env) :- 
     evalCondition(M, Env, Env,false).
-loops(M,N,O, Env,FinalEnv) :- 
+loops(M,N,O, Env,End) :- 
     evalBoolean(M, Env, Env,true),
     evalBlock(O, Env, NEnv),
     (evalIterator(N, NEnv, NEnv1);evalExpression(N, NEnv, NEnv1)),
-    loops(M,N,O, NEnv1,FinalEnv).
+    loops(M,N,O, NEnv1,End).
 loops(M,_N,_O, Env, Env) :- 
     evalBoolean(M, Env, Env,false).
 
-evalForrange(forRange(M,N,O,W), Env,FinalEnv):- 
+evalForrange(forRange(M,N,O,W), Env,End):- 
     evalCharTree(M,Id),
     ((evalNumtree(N, Val),update(int,Id, Val, Env, NEnv));
     (lookup(N, Env, Val),update(int,Id, Val, Env, NEnv))),
     ((evalNumtree(O,N));
     (evalCharTree(O,Id1),lookup(Id1, NEnv,N))),
-    looping(Id,N,W, NEnv,FinalEnv).
-looping(M,O,W, Env,FinalEnv):- 
+    looping(Id,N,W, NEnv,End).
+looping(M,O,W, Env,End):- 
     lookup(M, Env, Val),
     Val < O, 
     evalBlock(W, Env, NEnv),
     Val1 is Val + 1,
     update(int, M, Val1, NEnv, NEnv1),
-    looping(M,O,W, NEnv1,FinalEnv).
+    looping(M,O,W, NEnv1,End).
 looping(M,O,_W, Env, Env) :- 
     lookup(M, Env, Val), 
     Val >= O.
@@ -341,13 +344,21 @@ evalStr(string(I), Env, Env, Val) :-
     atom_string(I, Val).
 
 % Evaluate conditional expressions
-evalIf(ifCondition(M,N), Env,FinalEnv):- 
-    ((eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),evalBlock(N, NEnv,FinalEnv)).
+evalIf(ifCondition(M,N), Env,End):- 
+    ((eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),evalBlock(N, NEnv,End)).
 evalIf(ifCondition(M,_N), Env, NEnv):- 
     eval_condition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false).
-evalIf(ifCondition(M,N,_O), Env,FinalEnv):- 
+evalIf(ifCondition(M,N,_O), Env,End):- 
     (eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
-    evalBlock(N, NEnv,FinalEnv).
-evalIf(ifCondition(M,_N,O), Env,FinalEnv):- 
+    evalBlock(N, NEnv,End).
+evalIf(ifCondition(M,_N,O), Env,End):- 
     (eval_condition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
-    evalBlock(O, NEnv,FinalEnv).
+    evalBlock(O, NEnv,End).
+
+% Evaluate ternary expressions
+evalTernary(ternary(M, N,_Z), Env,End):- 
+    (evalCondition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
+    evalStatements( N, NEnv,End).
+evalTernary(ternary(M,_ N,Z), Env,End):- 
+    (evalCondition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
+    evalStatements(Z, NEnv,End).
