@@ -6,7 +6,7 @@ venom(Lexername, Filename) :-
 :- table boolean/3, expression/3, term/3.
 
 % Parsing the program 
-program(program(M)) -->['begin'], block(M), ['end'].
+program(program(M)) --> ['start'], block(M), ['end'].
 
 % Parsing the block
 block(block(M)) --> ['{'], blockSection(M), ['}']. 
@@ -102,6 +102,10 @@ identifier(identifier(M)) --> [M], {atom(M)}.
 string(M) --> onlystring(M).
 onlystring(onlystring(M)) --> [M], {atom(M)}.
 
+% Parse condition expressions
+condition(condition(M, N, O)) --> expression(M), operator(N), expression(O).
+condition(condition(M, N, O)) --> string(M), operator(N), string(O).
+condition(condition(M, N, O)) --> identifier(M), operator(N), string(O).
 
 % Parsing boolean expressions
 boolean(true) --> ['true'].
@@ -263,11 +267,103 @@ looping(M,O,_W, Env, Env) :-
     lookup(M, Env, Val), 
     Val >= O.
 
+% Evaluate conditional expressions
+evalCondition(condition(M, ==, N), Env, NEnv, Val) :- 
+    evalExpression(M, Env, NEnv, Val1),
+    evalExpression(N, Env, NEnv, Val2),
+    (( Val1 =:= Val2, Val = true); ( \+(Val1 =:= Val2), Val = false)).
+evalCondition(condition(M, '!=', N), Env, NEnv, Val) :- 
+    evalExpression(M, Env, NEnv, Val1),
+    evalExpression(N, Env, NEnv, Val2),
+    (( Val1 =\= Val2, Val = true);( \+(Val1 =\= Val2), Val = false)).
+evalCondition(condition(M, '>', N), Env, NEnv, Val) :-
+    evalExpression(M, Env, NEnv, Val1),
+    evalExpression(N, Env, NEnv, Val2),
+    (( Val1 > Val2, Val = true);( \+(Val1 > Val2), Val = false)).
+evalCondition(condition(M, '<', N), Env, NEnv, Val) :- 
+    evalExpression(M, Env, NEnv, Val1),
+    evalExpression(N, Env, NEnv, Val2),
+    (( Val1 < Val2, Val = true);( \+(Val1 < Val2), Val = false)).
+evalCondition(condition(M, '>=', N), Env, NEnv, Val) :- 
+    evalExpression(M, Env, NEnv, Val1),
+    evalExpression(N, Env, NEnv, Val2),
+    (( Val1 >= Val2, Val = true);( \+(Val1 >= Val2), Val = false)).
+evalCondition(condition(M, '<=', N), Env, NEnv, Val) :- 
+    evalExpression(M, Env, NEnv, Val1),
+    evalExpression(N, Env, NEnv, Val2),
+    (( Val1 =< Val2, Val = true);( \+(Val1 =< Val2), Val = false)).
+evalCondition(condition(M, ==, N), Env, NEnv, Val) :- 
+    evalStr(M, Env, NEnv, Val1),
+    evalStr(N, Env, NEnv, Val2),
+    ((Val1 = Val2, Val = true);(\+(Val1 = Val2), Val = false)).
+evalCondition(condition(M,'!=',N), Env, NEnv, Val) :-
+    evalStr(M, Env, NEnv, Val1),
+    evalStr(N, Env, NEnv, Val2),
+    ((Val1 = Val2, Val = false);(\+(Val1 = Val2), Val = true)).
+evalCondition(condition(M,'>',N), Env, NEnv,_Val) :- 
+    evalStr(M, Env, NEnv,_Val1),
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,'<',N), Env, NEnv,_Val) :- 
+    evalStr(M, Env, NEnv,_Val1),
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,'>=',N), Env, NEnv,_Val) :- 
+    evalStr(M, Env, NEnv,_Val1),
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,'<=',N), Env, NEnv,_Val) :- 
+    evalStr(M, Env, NEnv,_Val1),
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,==,N), Env, NEnv, Val) :-
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val1),
+    check_type(Val1,T),
+    T=string,
+    evalStr(N, Env, NEnv, Val2),
+    ((Val1 =@= Val2, Val = true);(\+(Val1 =@= Val2), Val = false)).
+evalCondition(condition(M,'!=',N), Env, NEnv, Val) :- 
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val1),
+    check_type(Val1,T),
+    T=string,
+    evalStr(N, Env, NEnv, Val2),
+    ((Val1 = Val2, Val = false);(\+(Val1 = Val2), Val = true)).
+evalCondition(condition(M,'>',N), Env, NEnv,_Val) :- 
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val1),
+    check_type(Val1,T),
+    T=string,
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,'<',N), Env, NEnv,_Val) :- 
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val1),
+    check_type(Val1,T),
+    T=string,
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,'>=',N), Env, NEnv,_Val) :- 
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val1),
+    check_type(Val1,T),
+    T=string,
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+evalCondition(condition(M,'<=',N), Env, NEnv,_Val) :- 
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val1),
+    check_type(Val1,T),
+    T=string,
+    evalStr(N, Env, NEnv,_Val2),
+    write("invalid operation").
+
 % Evaluates boolean expressions
 evalBoolean(true, _Env, _NEnv, true).
 evalBoolean(false, _Env, _NEnv,false).
 evalBoolean(t_bool_not(B), Env, NEnv, Val) :- 
-    (evalBoolean(B, Env, NEnv, Val1);eval_condition(B, Env, NEnv, Val1)), 
+    (evalBoolean(B, Env, NEnv, Val1);evalCondition(B, Env, NEnv, Val1)), 
     not(Val1, Val2), 
     Val = Val2.
 evalBoolean(t_bool_and(M, N), Env, NEnv, Val) :- 
@@ -275,16 +371,16 @@ evalBoolean(t_bool_and(M, N), Env, NEnv, Val) :-
     evalBoolean(N, Env, NEnv, Val2),
     and(Val1, Val2, Val).
 evalBoolean(t_bool_and(M, N), Env, NEnv, Val) :- 
-    eval_condition(M, Env, NEnv, Val1),
-    eval_condition(N, Env, NEnv, Val2), 
+    evalCondition(M, Env, NEnv, Val1),
+    evalCondition(N, Env, NEnv, Val2), 
     and(Val1, Val2, Val).
 evalBoolean(t_bool_or(M, N), Env, NEnv, Val) :- 
     evalBoolean(M, Env, NEnv, Val1),
     evalBoolean(N, Env, NEnv, Val2),
     or(Val1, Val2, Val).
 evalBoolean(t_bool_or(M, N), Env, NEnv, Val) :- 
-    eval_condition(M, Env, NEnv, Val1),
-    eval_condition(N, Env, NEnv, Val2),
+    evalCondition(M, Env, NEnv, Val1),
+    evalCondition(N, Env, NEnv, Val2),
     or(Val1, Val2, Val).
 
 % Evaluate arithemetic expressions
@@ -345,20 +441,20 @@ evalStr(string(I), Env, Env, Val) :-
 
 % Evaluate conditional expressions
 evalIf(ifCondition(M,N), Env,End):- 
-    ((eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),evalBlock(N, NEnv,End)).
+    ((evalCondition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),evalBlock(N, NEnv,End)).
 evalIf(ifCondition(M,_N), Env, NEnv):- 
-    eval_condition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false).
+    evalCondition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false).
 evalIf(ifCondition(M,N,_O), Env,End):- 
-    (eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
+    (evalCondition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
     evalBlock(N, NEnv,End).
 evalIf(ifCondition(M,_N,O), Env,End):- 
-    (eval_condition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
+    (evalCondition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
     evalBlock(O, NEnv,End).
 
 % Evaluate ternary expressions
-evalTernary(ternary(M, N,_Z), Env,End):- 
+evalTernary(ternary(M, N,_O), Env,End):- 
     (evalCondition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
     evalStatements( N, NEnv,End).
-evalTernary(ternary(M,_ N,Z), Env,End):- 
+evalTernary(ternary(M,_ N,O), Env,End):- 
     (evalCondition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
-    evalStatements(Z, NEnv,End).
+    evalStatements(O, NEnv,End).
