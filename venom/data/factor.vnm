@@ -1,0 +1,12 @@
+start
+{
+	int i = 12;
+	int n = 96;
+	int factor = 0;
+	while(factor <= n/i)
+	{
+	factor = factor + 1;
+	}
+	flash factor;
+}
+end

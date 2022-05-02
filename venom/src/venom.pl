@@ -5,24 +5,24 @@ venom(Lexer, Filename) :-
     string_concat(Lexer, '/venom/src/lexer.py', X), writeln(X),
     process_create(path('python3.8'), [X, Filename], [stdout(pipe(In))]),
     read_string(In, _, M),
-    term_to_atom(N, M),
-    program(Tree, N, []),
-    write('List of Tokens:'), nl, write(N),nl, nl,
+    term_to_atom(V, M),
+    program(Tree, V, []),
+    write('List of Tokens:'), nl, write(V),nl, nl,
     write('Parse Tree:'), nl, write(Tree),nl, nl, write('Output:'), nl,
     evalProgram(Tree, _Output).
 
 :- table boolean/3, expression/3, term/3.
 :- set_prolog_flag(singleton,off).
 
-%to parse the program 
+%Parsing the program
 program(program(M)) -->['start'], block(M), ['end'].
 
-%to parse the block 
+%Parsing the block expressions 
 block(block(M)) --> ['{'], blockHelper(M), ['}']. 
 blockHelper(block(M, N)) --> statements(M), blockHelper(N).
 blockHelper(block(M)) --> statements(M).
 
-%to parse the different type of statements 
+%Parsing the statement expressions 
 statements(statements(M)) --> declaration(M), [;].
 statements(statements(M)) --> assignment(M), [;].
 statements(statements(M)) --> expression(M), [;].
@@ -35,48 +35,46 @@ statements(statements(M)) --> while(M).
 statements(statements(M)) --> forInRange(M).
 statements(statements(M)) --> iterator(M), [;].
 
-%to parse variable declaration
+%Parsing the declaration statements
 declaration(declaration(int, M, N)) --> ['int'], identifier(M), ['='], expression(N).
 declaration(declaration(string, M, N)) --> ['string'], identifier(M), ['='], string(N).
 declaration(declaration(bool, M, true)) --> ['bool'], identifier(M), [=], ['true'].
 declaration(declaration(bool, M, false)) --> ['bool'], identifier(M), [=], ['false'].
 declaration(declaration(M, N)) --> type(M), identifier(N).
 
-%to parse assignment operation
+%Parsing assignments
 assignment(assignment(M, N)) --> 
         identifier(M), ['='], expression(N) 
         | identifier(M), ['='], boolean(N).
 
-%to parse datatype
+%Parsing datatypes
 type(int) --> ['int'].
 type(string) --> ['string'].
 type(bool) --> ['bool'].
 
-%to parse while
+%Parsing loop statements
 while(while(M, N)) --> ['while'], ['('], (condition(M);boolean(M)), [')'], block(N).
 
-%to parse for
 for(forLoop(M, N, O, D)) --> 
         ['for'], ['('], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [')'], block(D)
         | ['for'], ['('], declaration(M), [';'], (condition(N);boolean(N)), [';'], assignment(O), [')'], block(D)
         | ['for'], ['('], assignment(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [')'], block(D)
         | ['for'], ['('], assignment(M), [';'], (condition(N);boolean(N)), [';'], expression(O), [')'], block(D).
 
-%to parse forInRange
 forInRange(forRange(M, N, O, D)) --> 
         ['for'], identifier(M), ['in'], ['range'], ['('], value(N), [':'], value(O), [')'], block(D)
         | ['for'], identifier(M), ['in'], ['range'], ['('], identifier(N), [':'], identifier(O), [')'], block(D)
         | ['for'], identifier(M), ['in'], ['range'], ['('], value(N), [':'], identifier(O), [')'], block(D)
         | ['for'], identifier(M), ['in'], ['range'], ['('], identifier(N), [':'], value(O), [')'], block(D).
 
-%to parse if condition
+%Parsing Conditional statements
 if_cond(ifCondition(M, N)) --> ['if'], ['('], (condition(M);boolean(M)), [')'], block(N).
 if_cond(ifCondition(M, N, O)) --> ['if'], ['('], (condition(M);boolean(M)), [')'], block(N), ['else'], block(O).
 
-%to parse ternary condition
+%Parsing ternary expression
 ternaryExpression(ternary(M, N, O)) --> (condition(M);boolean(M)), ['?'], statements(N), [':'], statements(O).
 
-%to parse the boolean expression 
+%Parsing boolean expression 
 boolean(true) --> ['true'].
 boolean(false) --> ['false'].
 boolean(boolNot(M)) --> 
@@ -89,18 +87,18 @@ boolean(boolOr(M, N)) -->
         boolean(M), ['or'], boolean(N)
         | condition(M), ['or'], condition(N).
 
-%to parse flash statements
+%Parsingflash statements
 outputStream(flash(M)) --> 
         ['flash'], identifier(M)
         | ['flash'], value(M)
         | ['flash'], string(M).
 
-%to parse condition checks
+%Parsing condition checks statements
 condition(condition(M, N, O)) --> expression(M), operator(N), expression(O)
     | string(M), operator(N), string(O)
     | identifier(M), operator(N), string(O).
 
-%to parse conditional operator
+%Parsing operators
 operator(==) --> ['=='].
 operator('!=') --> ['!='].
 operator(>) --> ['>'].
@@ -108,7 +106,7 @@ operator(<) --> ['<'].
 operator(>=) --> ['>='].
 operator(<=) --> ['<='].
 
-%to parse addition ,subtraction,multiplication and division
+%Parsing arthimetic operations
 expression(add(M, N)) --> expression(M), ['+'], term(N).
 expression(sub(M, N)) --> expression(M), ['-'], term(N).
 expression(M) --> term(M).
@@ -118,11 +116,11 @@ term(M) --> ['('], expression(M), [')'].
 term(M) --> value(M).
 term(M) --> identifier(M).
 
-%to parse unary increment and decrement operation
+%Parsing increment and decrement operators
 iterator(increment(M)) --> identifier(M), ['+'], ['+'] .
 iterator(decrement(M)) --> identifier(M), ['-'], ['-'].
 
-%to parse number, identifier, and string
+%Parsing number, identifier, value
 value(value(N)) --> [N], {number(N)}.
 identifier(identifier(N)) --> [N], {atom(N)}.
 string(N) --> onlystring(N).
@@ -143,7 +141,7 @@ or(true, _, true).
 or(_, true, true).
 or(false, false, false).
 
-%lookup predicate find the respective values from the environment
+%lookup
 
 lookup(Id, [(_Type, Id, Temp)|_], Temp).
 lookup(Id, [_|Tail], Temp) :- lookup(Id, Tail, Temp).
@@ -151,22 +149,24 @@ lookup(Id, [_|Tail], Temp) :- lookup(Id, Tail, Temp).
 lookupHelper(Id, [_|Tail], Temp) :- lookupHelper(Id, Tail, Temp).
 lookupHelper(Id, [(Type,Id,_M)|_], Type).
 
-%update predicate updates the value of the identifier
+%update
 
 update(Type, Id, Val, [], [(Type, Id, Val)]).
 update(Type, Id, Val, [(Type, Id, _)|Tail], [(Type, Id, Val)|Tail]).
 update(Type, Id, Val, [Head|Tail], [Head|Rest]) :- update(Type, Id, Val, Tail, Rest).
 
-%to evaluate the program
+%Evaluator
+
+%Evaluating program
 evalProgram(program(M), End) :- evalBlock(M, [], End), !.
 
-%to evaluate the block
+%Evaluating block statements
 evalBlock(block(M), Env, End) :- evalBlockHelper(M, Env, End).
 evalBlockHelper(block(M, N), Env, End) :- evalStatements(M, Env, Env1), 
     evalBlockHelper(N, Env1, End).
 evalBlockHelper(block(M), Env, End) :- evalStatements(M, Env, End).
 
-%to evaluate the statements
+%EValuating statement expressions
 evalStatements(statements(M), Env, End) :- 
     evalDeclare(M, Env, End);
     evalAssignment(M, Env, End);
@@ -179,7 +179,7 @@ evalStatements(statements(M), Env, End) :-
     evalTernary(M, Env, End);
     evalIterator(M, Env, End).
 
-%to evaluate different types of declaration
+%Evaluating declaration statements
 evalDeclare(declaration(M, N), Env, NEnv):- 
     evalCharTree(N, Id),
     update(M, Id, _, Env, NEnv).
@@ -198,7 +198,7 @@ evalDeclare(declaration(bool, N, false), Env, NEnv):-
     evalCharTree(N, Id),
     update(bool, Id, false, Env, NEnv).
 
-%to evaluate the assignment operation
+%Evaluating assignments
 evalAssignment(assignment(M, N), Env, NEnv) :- 
     evalExpression(N, Env, Env1, Val),
     typeCheck(Val, T),
@@ -221,7 +221,7 @@ evalAssignment(assignment(M, N), Env, NEnv) :-
     T =@= T1,
     update(T, Id, Val, Env, NEnv).
 
-%to evaluate boolean condition
+%Evaluating boolean expressions
 evalBoolean(true, _Env1, _NEnv, true).
 evalBoolean(false, _Env1, _NEnv,false).
 evalBoolean(boolNot(B), Env, NEnv, Val) :- 
@@ -245,7 +245,7 @@ evalBoolean(boolOr(M, N), Env, NEnv, Val) :-
     evalCondition(N, Env, NEnv, Val2),
     or(Val1, Val2, Val).
 
-%to evaluate conditional operation
+%Evaluating condition statements
 evalCondition(condition(M, ==, N), Env, NEnv, Val) :- 
     evalExpression(M, Env, NEnv, Val1),
     evalExpression(N, Env, NEnv, Val2),
@@ -337,7 +337,7 @@ evalCondition(condition(M,'<=',N), Env, NEnv,_Val) :-
     evalStr(N, Env, NEnv,_Val2),
     write("invalid operation").
 
-%to evaluate the flash statement
+%Evaluating flash expression
 evalFlash(flash(M), Env, Env) :- 
     evalCharTree(M,Id),
     lookup(Id, Env, Val),
@@ -349,7 +349,7 @@ evalFlash(flash(M), Env, Env) :-
     evalStr(M, Env, Env, Val),
     writeln(Val).
 
-%to evaluate if condition
+%Evaluating conditional statements
 evalIf(ifCondition(M,N), Env,End):- 
     ((evalCondition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),evalBlock(N, NEnv,End)).
 evalIf(ifCondition(M,_N), Env, NEnv):- 
@@ -361,7 +361,7 @@ evalIf(ifCondition(M,_N,O), Env,End):-
     (evalCondition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
     evalBlock(O, NEnv,End).
 
-%to evaluate the while loop
+%Evaluating loop statements
 evalWhile(while(M,N), Env,End):- 
     evalBoolean(M, Env, NEnv,true),
     evalBlock(N, NEnv, NEnv1),
@@ -375,7 +375,6 @@ evalWhile(while(M,N), Env,End):-
 evalWhile(while(M,_N), Env, Env) :- 
     evalCondition(M, Env, Env,false).
 
-%to evaluate the for
 evalFor(forLoop(M,N,O,W), Env,End):- 
     evalDeclare(M, Env, NEnv),
     loops(N,O,W, NEnv,End).
@@ -397,14 +396,13 @@ loops(M,N,O, Env,End) :-
 loops(M,_N,_O, Env, Env) :- 
     evalBoolean(M, Env, Env,false).
 
-%to evaluate the forInRange
-evalForInRange(forLooprange(M,N,O,W), Env,End):- 
+evalForInRange(forRange(M,N,O,W), Env, End):- 
     evalCharTree(M,Id),
     ((evalValueTree(N, Val),update(int,Id, Val, Env, NEnv));
     (lookup(N, Env, Val),update(int,Id, Val, Env, NEnv))),
-    ((evalValueTree(O,N));
-    (evalCharTree(O,Id1),lookup(Id1, NEnv,N))),
-    looping(Id,N,W, NEnv,End).
+    ((evalValueTree(O,V));
+    (evalCharTree(O,Id1),lookup(Id1, NEnv,V))),
+    looping(Id,V,W, NEnv,End).
 looping(M,O,W, Env,End):- 
     lookup(M, Env, Val),
     Val < O, 
@@ -416,7 +414,7 @@ looping(M,O,_W, Env, Env) :-
     lookup(M, Env, Val), 
     Val >= O.
 
-%to evaluate ternary condition
+%Evaluating ternary expressions
 evalTernary(ternary(M,N,_O), Env,End):- 
     (evalCondition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
     evalStatements(N, NEnv,End).
@@ -424,7 +422,7 @@ evalTernary(ternary(M,_N,O), Env,End):-
     (evalCondition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
     evalStatements(O, NEnv,End).
 
-%to evaluate the increment,decrement operation
+%Evaluating increment decrement operators
 evalIterator(increment(M), Env, NEnv) :- 
     evalCharTree(M,Id),
     lookupHelper(Id, Env,int),
@@ -438,7 +436,7 @@ evalIterator(decrement(M), Env, NEnv) :-
     Val1 is Val - 1, 
     update(int,Id, Val1, Env, NEnv).
 
-%to evaluate addition,subtraction,multiplication and division
+%Evaluating arthimetic expressions
 evalExpression(M, Env, NEnv) :- 
     evalAssignment(M, Env, NEnv).
 evalExpression(M, Env, NEnv, Val) :- 
@@ -470,7 +468,7 @@ evalExprHelper3(M,  Env, NEnv, Val) :-
 evalExprHelper3(t_parentheses(M), Env, NEnv, Val):-
     evalExpression(M, Env, NEnv, Val).
 
-%to evaluate the number and string
+%Evaluating number, value and string
 evalValue(value(Val), Env, Env, Val).
 evalValue(identifier(I), Env, Env, Val) :-
     term_to_atom(Id,I),

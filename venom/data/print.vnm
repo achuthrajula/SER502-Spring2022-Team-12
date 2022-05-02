@@ -1,0 +1,9 @@
+start
+{
+string x = venom;
+string y = programminglanguage;
+
+flash x;
+flash y;
+}
+end
