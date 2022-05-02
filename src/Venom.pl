@@ -25,7 +25,7 @@ statements(statements(X)) -->
 statements(statements(X)) --> 
     printstatements(X), [;].
 statements(statements(X)) --> 
-    ifcondition(X).
+    if_cond(X).
 statements(statements(X)) --> 
     ternarycondition(X), [;].
 statements(statements(X)) --> 
@@ -48,6 +48,10 @@ declaration(declare(M, N)) --> dataType(M), identifier(N).
 dataType(int) --> ['int'].
 dataType(string) --> ['string'].
 dataType(bool) --> ['bool'].
+
+% Parsing if condition
+if_cond(ifCondition(M, N)) --> ['if'], ['('], (condition(M);boolean(M)), [')'], block(N).
+if_cond(ifCondition(M, N, O)) --> ['if'], ['('], (condition(M);boolean(M)), [')'], block(N), ['else'], block(O).
 
 % Parsing for loop
 for(forLoop(M, N, O, P)) --> 
@@ -139,28 +143,28 @@ evalProgram(t_Program(X), FinalEnv) :-
     evalBlock(X, [], FinalEnv), !.
 
 %to evaluate the block
-evalBlock(t_Block(X), Env, FinalEnv) :- 
-    eval_block_section(X, Env, FinalEnv).
-eval_block_section(t_Block(X, Y), Env, FinalEnv) :- 
-    eval_statements(X, Env, Env1),  eval_block_section(Y, Env1, FinalEnv).
-eval_block_section(t_Block(X), Env, FinalEnv) :- eval_statements(X, Env, FinalEnv).
+evalBlock(block(X), Env, FinalEnv) :- 
+    evalBlockHelper(X, Env, FinalEnv).
+evalBlockHelper(block(X, Y), Env, FinalEnv) :- 
+    evalStatements(X, Env, Env1),  evalBlockHelper(Y, Env1, FinalEnv).
+evalBlockHelper(block(X), Env, FinalEnv) :- evalStatements(X, Env, FinalEnv).
 
 %to evaluate different types of declaration
-eval_declare(t_declare(X, Y), Env, NewEnv):- 
+evalDeclare(declaration(X, Y), Env, NewEnv):- 
     evalCharTree(Y, Id),
     update(X, Id, _, Env, NewEnv).
-eval_declare(t_declareint(int, Y, Z), Env, NewEnv):- 
+evalDeclare(declaration(int, Y, Z), Env, NewEnv):- 
     evalCharTree(Y, Id),
     evalExpression(Z, Env, Env1, Val),
     update(int, Id, Val, Env1, NewEnv).
-eval_declare(t_declarestr(string, Y, Z), Env, NewEnv):- 
+evalDeclare(declaration(string, Y, Z), Env, NewEnv):- 
     evalCharTree(Y, Id),
     evalStr(Z, Env, NewEnv1, Val),
     update(string, Id, Val, NewEnv1, NewEnv).
-eval_declare(t_declarebool(bool, Y, true), Env, NewEnv):- 
+evalDeclare(declaration(bool, Y, true), Env, NewEnv):- 
     evalCharTree(Y, Id),
     update(bool, Id, true, Env, NewEnv).
-eval_declare(t_declarebool(bool, Y, false), Env, NewEnv):- 
+evalDeclare(declaration(bool, Y, false), Env, NewEnv):- 
     evalCharTree(Y, Id),
     update(bool, Id, false, Env, NewEnv).
 
@@ -180,7 +184,7 @@ evalWhile(t_WhileLoop(X,_Y), Env, Env) :-
 
 %to evaluate the forLoop
 evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
-    eval_declare(X, Env, NewEnv),
+    evalDeclare(X, Env, NewEnv),
     loops(Y,Z,W, NewEnv,FinalEnv).
 evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
     eval_assign(X, Env, NewEnv),
@@ -298,3 +302,16 @@ evalCharTree(identifier(I),Id):-
     term_to_atom(Id,I).
 evalStr(string(I), Env, Env, Val) :- 
     atom_string(I, Val).
+
+% Evaluate if condition
+
+evalIf(ifCondition(M,N), Env,FinalEnv):- 
+    ((eval_condition(M, Env, NewEnv,true);evalBoolean(M, Env, NewEnv,true)),evalBlock(N, NewEnv,FinalEnv)).
+evalIf(ifCondition(M,_N), Env, NewEnv):- 
+    eval_condition(M, Env, NewEnv,false);evalBoolean(M, Env, NewEnv,false).
+evalIf(ifCondition(M,N,_O), Env,FinalEnv):- 
+    (eval_condition(M, Env, NewEnv,true);evalBoolean(M, Env, NewEnv,true)),
+    evalBlock(N, NewEnv,FinalEnv).
+evalIf(ifCondition(M,_N,O), Env,FinalEnv):- 
+    (eval_condition(M, Env, NewEnv,false);evalBoolean(M, Env, NewEnv,false)),
+    evalBlock(O, NewEnv,FinalEnv).
