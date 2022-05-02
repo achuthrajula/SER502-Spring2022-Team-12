@@ -5,9 +5,9 @@ venom(Lexer, Filename) :-
     string_concat(Lexer, '/venom/src/lexer.py', X), writeln(X),
     process_create(path('python3.8'), [X, Filename], [stdout(pipe(In))]),
     read_string(In, _, M),
-    term_to_atom(N, M),
-    program(Tree, N, []),
-    write('List of Tokens:'), nl, write(N),nl, nl,
+    term_to_atom(V, M),
+    program(Tree, V, []),
+    write('List of Tokens:'), nl, write(V),nl, nl,
     write('Parse Tree:'), nl, write(Tree),nl, nl, write('Output:'), nl,
     evalProgram(Tree, _Output).
 
@@ -398,13 +398,13 @@ loops(M,_N,_O, Env, Env) :-
     evalBoolean(M, Env, Env,false).
 
 %to evaluate the forInRange
-evalForInRange(forLooprange(M,N,O,W), Env,End):- 
+evalForInRange(forRange(M,N,O,W), Env, End):- 
     evalCharTree(M,Id),
     ((evalValueTree(N, Val),update(int,Id, Val, Env, NEnv));
     (lookup(N, Env, Val),update(int,Id, Val, Env, NEnv))),
-    ((evalValueTree(O,N));
-    (evalCharTree(O,Id1),lookup(Id1, NEnv,N))),
-    looping(Id,N,W, NEnv,End).
+    ((evalValueTree(O,V));
+    (evalCharTree(O,Id1),lookup(Id1, NEnv,V))),
+    looping(Id,V,W, NEnv,End).
 looping(M,O,W, Env,End):- 
     lookup(M, Env, Val),
     Val < O, 

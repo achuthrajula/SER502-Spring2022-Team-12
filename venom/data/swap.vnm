@@ -1,0 +1,14 @@
+start
+{
+int x=10;
+int y = 29;
+int temp = 0;
+
+temp = x;
+x = y;
+y = temp;
+
+flash x;
+flash y;
+}
+end

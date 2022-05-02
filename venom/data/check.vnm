@@ -1,0 +1,18 @@
+start
+{
+
+bool check = true;
+int num1 = 2;
+int num2 =10;
+
+if(not(num2/num1 == 10)) 
+{
+flash check;
+}
+else
+{
+flash false;
+}
+
+}
+end

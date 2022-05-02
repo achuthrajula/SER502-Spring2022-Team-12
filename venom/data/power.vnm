@@ -1,0 +1,14 @@
+start
+{
+int number = 2;
+int exp = 5;
+int result = 1;
+
+while(exp != 0)
+{
+    result = result * number;
+    exp = exp - 1;
+}
+flash result;
+}
+end
