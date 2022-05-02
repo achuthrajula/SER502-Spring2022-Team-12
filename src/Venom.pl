@@ -138,87 +138,98 @@ update(Type, Id, Val, [Head|Tail], [Head|Rest]) :- update(Type, Id, Val, Tail, R
 
 %Evaluations begin here
 
-%to evaluate the program
+% Evaluate program statement
 evalProgram(t_Program(X), FinalEnv) :- 
     evalBlock(X, [], FinalEnv), !.
 
-%to evaluate the block
+% Evaluate block expressions
 evalBlock(block(X), Env, FinalEnv) :- 
     evalBlockHelper(X, Env, FinalEnv).
 evalBlockHelper(block(X, Y), Env, FinalEnv) :- 
     evalStatements(X, Env, Env1),  evalBlockHelper(Y, Env1, FinalEnv).
 evalBlockHelper(block(X), Env, FinalEnv) :- evalStatements(X, Env, FinalEnv).
 
-%to evaluate different types of declaration
-evalDeclare(declaration(X, Y), Env, NewEnv):- 
+% Evaluate declaration statements
+evalDeclare(declaration(X, Y), Env, NEnv):- 
     evalCharTree(Y, Id),
-    update(X, Id, _, Env, NewEnv).
-evalDeclare(declaration(int, Y, Z), Env, NewEnv):- 
+    update(X, Id, _, Env, NEnv).
+evalDeclare(declaration(int, Y, Z), Env, NEnv):- 
     evalCharTree(Y, Id),
     evalExpression(Z, Env, Env1, Val),
-    update(int, Id, Val, Env1, NewEnv).
-evalDeclare(declaration(string, Y, Z), Env, NewEnv):- 
+    update(int, Id, Val, Env1, NEnv).
+evalDeclare(declaration(string, Y, Z), Env, NEnv):- 
     evalCharTree(Y, Id),
-    evalStr(Z, Env, NewEnv1, Val),
-    update(string, Id, Val, NewEnv1, NewEnv).
-evalDeclare(declaration(bool, Y, true), Env, NewEnv):- 
+    evalStr(Z, Env, NEnv1, Val),
+    update(string, Id, Val, NEnv1, NEnv).
+evalDeclare(declaration(bool, Y, true), Env, NEnv):- 
     evalCharTree(Y, Id),
-    update(bool, Id, true, Env, NewEnv).
-evalDeclare(declaration(bool, Y, false), Env, NewEnv):- 
+    update(bool, Id, true, Env, NEnv).
+evalDeclare(declaration(bool, Y, false), Env, NEnv):- 
     evalCharTree(Y, Id),
-    update(bool, Id, false, Env, NewEnv).
+    update(bool, Id, false, Env, NEnv).
 
-%to evaluate the while loop
+% Evaluate statement expressions
+evalStatements(t_statements(X), Env, FinalEnv) :- 
+    evalDeclare(X, Env, FinalEnv);
+    evalAssignment(X, Env, FinalEnv);
+    evalBoolean(X, Env, FinalEnv, _Val);
+    evalPrint(X, Env, FinalEnv);
+    evalCondition(X, Env, FinalEnv);
+    evalWhile(X, Env, FinalEnv);
+    evalFor(X, Env, FinalEnv);
+    evalForInRange(X, Env, FinalEnv);
+    evalTernary(X, Env, FinalEnv);
+    evalIterator(X, Env, FinalEnv).
+
+% Evaluate loop expressions
 evalWhile(t_WhileLoop(X,Y), Env,FinalEnv):- 
-    evalBoolean(X, Env, NewEnv,true),
-    evalBlock(Y, NewEnv, NewEnv1),
-    evalWhile(t_WhileLoop(X,Y), NewEnv1,FinalEnv).
+    evalBoolean(X, Env, NEnv,true),
+    evalBlock(Y, NEnv, NEnv1),
+    evalWhile(t_WhileLoop(X,Y), NEnv1,FinalEnv).
 evalWhile(t_WhileLoop(X,_Y), Env, Env) :- 
     evalBoolean(X, Env, Env,false).
 evalWhile(t_WhileLoop(X,Y), Env,FinalEnv):- 
-    evalCondition(X, Env, NewEnv,true),
-    evalBlock(Y, NewEnv, NewEnv1),
-    evalWhile(t_WhileLoop(X,Y), NewEnv1,FinalEnv).
+    evalCondition(X, Env, NEnv,true),
+    evalBlock(Y, NEnv, NEnv1),
+    evalWhile(t_WhileLoop(X,Y), NEnv1,FinalEnv).
 evalWhile(t_WhileLoop(X,_Y), Env, Env) :- 
     evalCondition(X, Env, Env,false).
 
-%to evaluate the forLoop
-evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
-    evalDeclare(X, Env, NewEnv),
-    loops(Y,Z,W, NewEnv,FinalEnv).
-evalForloop(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
-    eval_assign(X, Env, NewEnv),
-    loops(Y,Z,W, NewEnv,FinalEnv).
+evalFor(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
+    evalDeclare(X, Env, NEnv),
+    loops(Y,Z,W, NEnv,FinalEnv).
+evalFor(t_ForLoop(X,Y,Z,W), Env,FinalEnv):- 
+    eval_assign(X, Env, NEnv),
+    loops(Y,Z,W, NEnv,FinalEnv).
 loops(X,Y,Z, Env,FinalEnv) :- 
     evalCondition(X, Env, Env,true),
-    evalBlock(Z, Env, NewEnv),
-    (evalIterator(Y, NewEnv, NewEnv1);evalExpression(Y, NewEnv, NewEnv1)),
-    loops(X,Y,Z, NewEnv1,FinalEnv).
+    evalBlock(Z, Env, NEnv),
+    (evalIterator(Y, NEnv, NEnv1);evalExpression(Y, NEnv, NEnv1)),
+    loops(X,Y,Z, NEnv1,FinalEnv).
 loops(X,_Y,_Z, Env, Env) :- 
     evalCondition(X, Env, Env,false).
 loops(X,Y,Z, Env,FinalEnv) :- 
     evalBoolean(X, Env, Env,true),
-    evalBlock(Z, Env, NewEnv),
-    (evalIterator(Y, NewEnv, NewEnv1);evalExpression(Y, NewEnv, NewEnv1)),
-    loops(X,Y,Z, NewEnv1,FinalEnv).
+    evalBlock(Z, Env, NEnv),
+    (evalIterator(Y, NEnv, NEnv1);evalExpression(Y, NEnv, NEnv1)),
+    loops(X,Y,Z, NEnv1,FinalEnv).
 loops(X,_Y,_Z, Env, Env) :- 
     evalBoolean(X, Env, Env,false).
 
-%to evaluate the forRange
 evalForrange(forRange(X,Y,Z,W), Env,FinalEnv):- 
     evalCharTree(X,Id),
-    ((evalNumtree(Y, Val),update(int,Id, Val, Env, NewEnv));
-    (lookup(Y, Env, Val),update(int,Id, Val, Env, NewEnv))),
+    ((evalNumtree(Y, Val),update(int,Id, Val, Env, NEnv));
+    (lookup(Y, Env, Val),update(int,Id, Val, Env, NEnv))),
     ((evalNumtree(Z,N));
-    (evalCharTree(Z,Id1),lookup(Id1, NewEnv,N))),
-    looping(Id,N,W, NewEnv,FinalEnv).
+    (evalCharTree(Z,Id1),lookup(Id1, NEnv,N))),
+    looping(Id,N,W, NEnv,FinalEnv).
 looping(X,Z,W, Env,FinalEnv):- 
     lookup(X, Env, Val),
     Val < Z, 
-    evalBlock(W, Env, NewEnv),
+    evalBlock(W, Env, NEnv),
     Val1 is Val + 1,
-    update(int, X, Val1, NewEnv, NewEnv1),
-    looping(X,Z,W, NewEnv1,FinalEnv).
+    update(int, X, Val1, NEnv, NEnv1),
+    looping(X,Z,W, NEnv1,FinalEnv).
 looping(X,Z,_W, Env, Env) :- 
     lookup(X, Env, Val), 
     Val >= Z.
@@ -247,51 +258,51 @@ evalBoolean(t_bool_or(X, Y), Env, NEnv, Val) :-
     eval_condition(Y, Env, NEnv, Val2),
     or(Val1, Val2, Val).
 
-%to evaluate addition,subtraction,multiplication and division
-evalExpression(X, Env, NewEnv) :- 
-    eval_assignment(X, Env, NewEnv).
-evalExpression(X, Env, NewEnv, Val) :- 
-    evalExpressionHelper(X, Env, NewEnv, Val).
-evalExpression(sub(X,Y), Env, NewEnv, Val):-
-    evalExpression(X, Env, Env1, Val1),
-    evalExpressionHelper(Y, Env1, NewEnv, Val2),
+% Evaluate arithemetic expressions
+evalExpression(M, Env, NEnv) :- 
+    evalAssignment(M, Env, NEnv).
+evalExpression(M, Env, NEnv, Val) :- 
+    evalExpressionHelper(M, Env, NEnv, Val).
+evalExpression(sub(M,N), Env, NEnv, Val):-
+    evalExpression(M, Env, Env1, Val1),
+    evalExpressionHelper(N, Env1, NEnv, Val2),
     Val is Val1 - Val2.
-evalExpressionHelper(X, Env, NewEnv, Val) :- 
-    evalHelper1(X, Env, NewEnv, Val).
-evalExpressionHelper(add(X,Y), Env, NewEnv, Val):-
-    evalExpressionHelper(X, Env, Env1, Val1),
-    evalHelper1(Y, Env1, NewEnv, Val2),
+evalExpressionHelper(M, Env, NEnv, Val) :- 
+    evalHelper1(M, Env, NEnv, Val).
+evalExpressionHelper(add(M,N), Env, NEnv, Val):-
+    evalExpressionHelper(M, Env, Env1, Val1),
+    evalHelper1(N, Env1, NEnv, Val2),
     Val is Val1 + Val2.
-evalHelper1(X, Env, NewEnv, Val) :- 
-    evalHelper2(X, Env, NewEnv, Val).
-evalHelper1(mult(X,Y), Env, NewEnv, Val):-
-    evalHelper1(X, Env, Env1, Val1),
-    evalHelper2(Y, Env1, NewEnv, Val2),
+evalHelper1(M, Env, NEnv, Val) :- 
+    evalHelper2(M, Env, NEnv, Val).
+evalHelper1(mult(M,N), Env, NEnv, Val):-
+    evalHelper1(M, Env, Env1, Val1),
+    evalHelper2(N, Env1, NEnv, Val2),
     Val is Val1 * Val2.
-evalHelper2(X, Env, NewEnv, Val) :- 
-    evalHelper3(X, Env, NewEnv, Val).
-evalHelper2(div(X,Y),  Env, NewEnv, Val):-
-    evalHelper2(X, Env, Env1, Val1), 
-    evalHelper3(Y, Env1, NewEnv, Val2),
+evalHelper2(M, Env, NEnv, Val) :- 
+    evalHelper3(M, Env, NEnv, Val).
+evalHelper2(div(M,N),  Env, NEnv, Val):-
+    evalHelper2(M, Env, Env1, Val1), 
+    evalHelper3(N, Env1, NEnv, Val2),
     Val is floor(Val1 / Val2).
-evalHelper3(X,  Env, NewEnv, Val) :- 
-    evalValue(X, Env, NewEnv, Val).
-evalHelper3(t_parentheses(X), Env, NewEnv, Val):-
-    evalExpression(X, Env, NewEnv, Val).
+evalHelper3(M,  Env, NEnv, Val) :- 
+    evalValue(M, Env, NEnv, Val).
+evalHelper3(t_parentheses(M), Env, NEnv, Val):-
+    evalExpression(M, Env, NEnv, Val).
 
 %to evaluate the increment,decrement operation
-evalIterator(increment(M), Env, NewEnv) :- 
+evalIterator(increment(M), Env, NEnv) :- 
     evalCharTree(M,Id),
     lookup_type(Id, Env,int),
     lookup(Id, Env, Val),
     Val1 is Val + 1, 
-    update(int,Id, Val1, Env, NewEnv).
-evalIterator(decrement(M), Env, NewEnv) :- 
+    update(int,Id, Val1, Env, NEnv).
+evalIterator(decrement(M), Env, NEnv) :- 
     evalCharTree(M,Id),
     lookup_type(Id, Env,int),
     lookup(Id, Env, Val),
     Val1 is Val - 1, 
-    update(int,Id, Val1, Env, NewEnv).
+    update(int,Id, Val1, Env, NEnv).
 
 evalValue(value(Val), Env, Env, Val).
 evalValue(identifier(I), Env, Env, Val) :-
@@ -303,15 +314,14 @@ evalCharTree(identifier(I),Id):-
 evalStr(string(I), Env, Env, Val) :- 
     atom_string(I, Val).
 
-% Evaluate if condition
-
+% Evaluate conditional expressions
 evalIf(ifCondition(M,N), Env,FinalEnv):- 
-    ((eval_condition(M, Env, NewEnv,true);evalBoolean(M, Env, NewEnv,true)),evalBlock(N, NewEnv,FinalEnv)).
-evalIf(ifCondition(M,_N), Env, NewEnv):- 
-    eval_condition(M, Env, NewEnv,false);evalBoolean(M, Env, NewEnv,false).
+    ((eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),evalBlock(N, NEnv,FinalEnv)).
+evalIf(ifCondition(M,_N), Env, NEnv):- 
+    eval_condition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false).
 evalIf(ifCondition(M,N,_O), Env,FinalEnv):- 
-    (eval_condition(M, Env, NewEnv,true);evalBoolean(M, Env, NewEnv,true)),
-    evalBlock(N, NewEnv,FinalEnv).
+    (eval_condition(M, Env, NEnv,true);evalBoolean(M, Env, NEnv,true)),
+    evalBlock(N, NEnv,FinalEnv).
 evalIf(ifCondition(M,_N,O), Env,FinalEnv):- 
-    (eval_condition(M, Env, NewEnv,false);evalBoolean(M, Env, NewEnv,false)),
-    evalBlock(O, NewEnv,FinalEnv).
+    (eval_condition(M, Env, NEnv,false);evalBoolean(M, Env, NEnv,false)),
+    evalBlock(O, NEnv,FinalEnv).
