@@ -56,6 +56,9 @@ assignment(assignment(M, N)) --> identifier(M), ['='], expression(N) | identifie
 if_cond(ifCondition(M, N)) --> ['if'], ['('], (condition(M);boolean(M)), [')'], block(N).
 if_cond(ifCondition(M, N, O)) --> ['if'], ['('], (condition(M);boolean(M)), [')'], block(N), ['else'], block(O).
 
+% Parse flash expressions
+outputStream(flash(X)) --> ['flash'], identifier(X) | ['flash'], value(X) | ['flash'], string(X).
+
 % Parsing for loop
 for(forLoop(M, N, O, P)) --> 
     ['for'], ['['], declaration(M), [';'], (condition(N);boolean(N)), [';'], iterator(O), [']'], block(P).
@@ -191,8 +194,8 @@ evalStatements(t_statements(M), Env, End) :-
     evalDeclare(M, Env, End);
     evalAssignment(M, Env, End);
     evalBoolean(M, Env, End, _Val);
-    evalPrint(M, Env, End);
-    evalCondition(M, Env, End);
+    evalOutputStream(M, Env, End);
+    evalIf(M, Env, End);
     evalWhile(M, Env, End);
     evalFor(M, Env, End);
     evalForInRange(M, Env, End);
@@ -446,6 +449,18 @@ evalCharTree(identifier(I),Id):-
     term_to_atom(Id,I).
 evalStr(string(I), Env, Env, Val) :- 
     atom_string(I, Val).
+
+% Evaluate the flash expressions
+evalOutputStream(flash(M), Env, Env) :- 
+    evalCharTree(M,Id),
+    lookup(Id, Env, Val),
+    writeln(Val).
+evalOutputStream(flash(M), Env, Env) :- 
+    evalNumtree(M, Val),
+    writeln(Val).
+evalOutputStream(flash(M), Env, Env) :- 
+    evalStr(M, Env, Env, Val),
+    writeln(Val).
 
 % Evaluate conditional expressions
 evalIf(ifCondition(M,N), Env,End):- 
